@@ -24,6 +24,8 @@ public class PersistenceListener implements ServletContextListener {
                 new DesignV1DemoSeeder(persistence.entityManagerFactory()).seed(password);
             }
             event.getServletContext().setAttribute(RouteConfiguration.ATTRIBUTE, RouteConfiguration.fromEnvironment());
+            event.getServletContext().setAttribute(com.miniongvang.service.DriverRankingService.ATTRIBUTE,
+                    RouteConfiguration.driverRoutingFromEnvironment());
             event.getServletContext().setAttribute(ATTRIBUTE, persistence);
         } catch (RuntimeException failure) {
             persistence.close();

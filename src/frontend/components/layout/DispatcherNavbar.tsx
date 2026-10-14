@@ -10,7 +10,7 @@ interface DispatcherNavbarProps {
   incidentCount?: number;
 }
 
-export function DispatcherNavbar({ pendingCount = 2, incidentCount = 1 }: DispatcherNavbarProps) {
+export function DispatcherNavbar({ pendingCount, incidentCount }: DispatcherNavbarProps) {
   const pathname = usePathname();
   const [currentTime, setCurrentTime] = useState<string>("");
 
@@ -31,10 +31,12 @@ export function DispatcherNavbar({ pendingCount = 2, incidentCount = 1 }: Dispat
     return () => clearInterval(interval);
   }, []);
 
+  const live = pathname?.startsWith("/dispatcher/live");
   const navLinks = [
     { href: "/dispatcher", label: "Bàn điều phối" },
-    { href: "/dispatcher/create-order", label: "Hotline tạo đơn" },
-    { href: "/dispatcher/fleet", label: "Đội xe & Tài xế" },
+    { href: "/dispatcher/live", label: "Điều phối thật · TX4" },
+    { href: live ? "/dispatcher/live/create-order" : "/dispatcher/create-order", label: "Hotline tạo đơn" },
+    { href: live ? "/dispatcher/live/fleet" : "/dispatcher/fleet", label: "Đội xe & Tài xế" },
     { href: "/dispatcher/reports", label: "Báo cáo & Đối soát" },
   ];
 
@@ -98,11 +100,11 @@ export function DispatcherNavbar({ pendingCount = 2, incidentCount = 1 }: Dispat
             title="Đơn hàng chờ gán tài xế"
           >
             <span className="text-amber-800 font-medium">Hàng đợi:</span>
-            <span className="font-extrabold text-amber-900">{pendingCount}</span>
+            <span className="font-extrabold text-amber-900">{pendingCount ?? "—"}</span>
           </Link>
 
           {/* Active Incident Counter */}
-          {incidentCount > 0 && (
+          {incidentCount !== undefined && incidentCount > 0 && (
             <Link
               href="/dispatcher"
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold hover:bg-rose-100 transition-colors whitespace-nowrap shrink-0"

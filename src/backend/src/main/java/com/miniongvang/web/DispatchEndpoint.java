@@ -27,7 +27,10 @@ public final class DispatchEndpoint {
         }
         try {
             var persistence=(PersistenceContext)req.getServletContext().getAttribute(PersistenceListener.ATTRIBUTE);
-            var service=new DispatchService(persistence.entityManagerFactory());
+            var routing=(com.miniongvang.service.DriverRankingService)req.getServletContext()
+                    .getAttribute(com.miniongvang.service.DriverRankingService.ATTRIBUTE);
+            var service=new DispatchService(persistence.entityManagerFactory(),java.time.Clock.systemUTC(),
+                    routing==null?new com.miniongvang.service.DriverRankingService(null):routing);
             HttpSession session=req.getSession(false);
             String user=session==null?null:(String)session.getAttribute("auth.userId");
             var actor=user==null?null:new AuthService(persistence.entityManagerFactory()).currentActor(user);
@@ -44,6 +47,8 @@ public final class DispatchEndpoint {
             } else if (get && path.equals("/api/drivers")) {
                 result=service.drivers(actor,integer(req,"page",0),integer(req,"size",20),
                         enumeration(req,"trangThaiHoatDong",DriverStatus.class),bool(req,"dangBanChuyen"));
+            } else if (post && path.matches("/api/drivers/[^/]+/demo-location")) {
+                result=service.configureLocation(actor,path.split("/",-1)[3],body(req,"diaChi"));
             } else {
                 String[] parts=path.split("/",-1);
                 if (parts.length<4 || !parts[1].equals("api") || !parts[2].equals("orders"))
@@ -86,6 +91,15 @@ public final class DispatchEndpoint {
         catch (SecurityException forbidden) { error(resp,403,"FORBIDDEN"); }
         catch (NoSuchElementException missing) { error(resp,404,"RESOURCE_NOT_FOUND"); }
         catch (DispatchErrors.Conflict conflict) { error(resp,409,conflict.getMessage()); }
+        catch (com.miniongvang.service.DriverRankingService.Unconfigured unavailable) { error(resp,503,"GOONG_NOT_CONFIGURED"); }
+        catch (com.miniongvang.integration.RouteFailure failure) {
+            int status=switch(failure.kind()) {
+                case ADDRESS_NOT_FOUND,OUT_OF_SERVICE_AREA,DISTANCE_INVALID -> 422;
+                case ROUTE_PROVIDER_TIMEOUT -> 504;
+                case ROUTE_PROVIDER_ERROR -> 502;
+            };
+            error(resp,status,failure.kind().name());
+        }
         catch (RuntimeException failure) {
             req.getServletContext().log("Dispatch request failed",failure);
             if (!resp.isCommitted()) error(resp,500,"INTERNAL_ERROR");

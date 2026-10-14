@@ -1,3 +1,5 @@
+> **Tiến độ migration:** V5 triển khai TX3; V6 triển khai bộ 5 cột vị trí `tai_xe` cho TX4. Chưa xác minh địa chỉ Goong thật trên cloud; không seed tọa độ giả. Các thay đổi khác trong tài liệu vẫn theo phạm vi task tương ứng.
+
 # TX1 — Thiết kế đích cho luồng giao hàng mới
 
 **Trạng thái:** thiết kế đích ngày 14/10/2026, chưa phải schema hoặc hành vi backend đang chạy. [designV1](designV1.md) mô tả 19 bảng và các quy tắc hiện đã triển khai; tài liệu này là phần thay đổi có chủ đích để TX3–TX7 thực hiện bằng migration mới. Các cột và bảng không nêu ở đây giữ quy tắc designV1. [Contract API đích](../api/TX1-contract.md) dùng cùng tên trường và trạng thái.

@@ -22,9 +22,14 @@ public final class DispatchQueryService {
     private static final ZoneId VIETNAM = ZoneId.of("Asia/Ho_Chi_Minh");
     private final TransactionRunner transactions;
     private final Clock clock;
+    private final DriverRankingService routing;
     public DispatchQueryService(EntityManagerFactory factory, Clock clock) {
+        this(factory,clock,new DriverRankingService(null));
+    }
+    public DispatchQueryService(EntityManagerFactory factory, Clock clock, DriverRankingService routing) {
         transactions = new TransactionRunner(factory);
         this.clock = clock;
+        this.routing = routing;
     }
 
     public OrderPage orders(ActorContext actor, int page, int size, LocalDate from, LocalDate to, OrderStatus status) {
@@ -72,13 +77,28 @@ public final class DispatchQueryService {
 
     public DriverPage suggestions(ActorContext actor,String id,int page,int size) {
         id(id); page(page,size);
+        Snapshot before = snapshot(actor,id);
+        var ranked = routing.rank(before.candidates(),before.pickup());
+        // Re-check eligibility/location/order after network calls; an assignment or cancellation may have won.
+        Snapshot after = snapshot(actor,id);
+        if (!before.equals(after)) ranked = DriverRankingService.fallback(after.candidates(),"DRIVER_SNAPSHOT_CHANGED");
+        int start = (int)Math.min((long)page*size,ranked.items().size());
+        int end = Math.min(start+size,ranked.items().size());
+        return new DriverPage(ranked.items().subList(start,end),page,size,ranked.items().size(),
+                pages(ranked.items().size(),size),ranked.method(),ranked.fallbackReason());
+    }
+
+    private record Snapshot(String pickup, List<DriverRankingService.Candidate> candidates) {}
+    private Snapshot snapshot(ActorContext actor,String id) {
         return transactions.run(em -> {
             DispatchAccess.actor(em,actor,AccountRole.TONG_DAI);
             DonHang order=new DonHangDAO(em).find(id);
             if (order==null) throw new NoSuchElementException("Order not found");
             if (order.getTrangThai()!=OrderStatus.CHO_GAN) throw new DispatchErrors.Conflict("ORDER_STATE_CONFLICT");
-            return driverPage(em,new DispatchDAO(em).drivers(DriverStatus.ONLINE,false,id,
-                    LocalDate.ofInstant(clock.instant(),VIETNAM),page,size),page,size);
+            var result = new DispatchDAO(em).drivers(DriverStatus.ONLINE,false,id,
+                    LocalDate.ofInstant(clock.instant(),VIETNAM),0,Integer.MAX_VALUE);
+            return new Snapshot(order.getDiemLayHang(),result.items().stream()
+                    .map(d -> new DriverRankingService.Candidate(driverView(em,d),d.getRanhTu())).toList());
         });
     }
 
@@ -147,13 +167,17 @@ public final class DispatchQueryService {
     }
 
     static DriverPage driverPage(EntityManager em,DispatchDAO.Drivers result,int page,int size) {
-        var dao=new DispatchDAO(em);
-        var items=result.items().stream().map(t->{
-            var v=dao.vehicle(t.getId());
-            Vehicle vehicle=v==null?null:new Vehicle(v.getId(),v.getBienSoXe(),v.getLoaiXe(),v.getMauXe());
-            return new Driver(t.getId(),t.getHoTen(),t.getSoDienThoai(),t.getTrangThai().name(),dao.busy(t.getId()),vehicle);
-        }).toList();
-        return new DriverPage(items,page,size,result.total(),pages(result.total(),size));
+        var items=result.items().stream().map(t -> driverView(em,t)).toList();
+        return new DriverPage(items,page,size,result.total(),pages(result.total(),size),"TEN_TAI_XE",null);
+    }
+
+    static Driver driverView(EntityManager em,TaiXe t) {
+        var dao=new DispatchDAO(em); var v=dao.vehicle(t.getId());
+        Vehicle vehicle=v==null?null:new Vehicle(v.getId(),v.getBienSoXe(),v.getLoaiXe(),v.getMauXe());
+        return new Driver(t.getId(),t.getHoTen(),t.getSoDienThoai(),t.getTrangThai().name(),dao.busy(t.getId()),vehicle,
+                t.getDiaChiViTriDemo(),t.getViDoDemo()==null?null:t.getViDoDemo().toPlainString(),
+                t.getKinhDoDemo()==null?null:t.getKinhDoDemo().toPlainString(),t.getNguonViTri(),
+                t.getViTriCapNhatLuc()==null?null:t.getViTriCapNhatLuc().toString(),null,null,null);
     }
 
     static String money(BigDecimal value) { return value.setScale(2).toPlainString(); }

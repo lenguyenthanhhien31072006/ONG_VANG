@@ -25,8 +25,8 @@ export function AuthGuard({ children }: { children: ReactNode }) {
     let active = true;
     const checkSession = () => currentUser().then((user) => {
       if (!active) return;
-      if (!user) router.replace("/login?reason=session");
-      else if (user.vaiTro !== role) router.replace(homeForRole[user.vaiTro]);
+      if (!user) { setAllowed(false); router.replace("/login?reason=session"); }
+      else if (user.vaiTro !== role) { setAllowed(false); router.replace(homeForRole[user.vaiTro]); }
       else { setAllowed(true); setCheckedPath(pathname); }
     }).catch(() => {
       if (active) { setAllowed(false); setCheckedPath(pathname); }
@@ -34,7 +34,8 @@ export function AuthGuard({ children }: { children: ReactNode }) {
     void checkSession();
     const timer = window.setInterval(checkSession, 60_000);
     window.addEventListener("focus", checkSession);
-    return () => { active = false; window.clearInterval(timer); window.removeEventListener("focus", checkSession); };
+    window.addEventListener("api-session-check", checkSession);
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener("focus", checkSession); window.removeEventListener("api-session-check", checkSession); };
   }, [pathname, role, router]);
 
   if (!role) return children;

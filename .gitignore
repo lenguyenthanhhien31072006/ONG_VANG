@@ -32,3 +32,6 @@ Thumbs.db
 *.pid
 # Local backup created while folding frontend into the root repository
 .git-migration-backup/
+
+# Browser test generated reports
+playwright-report/

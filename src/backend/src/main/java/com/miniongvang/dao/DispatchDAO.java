@@ -57,9 +57,10 @@ public final class DispatchDAO {
                 select count(p) from PhanCongDonHang p
                 where p.donHang.id=:order and p.taiXe.id=:driver
                   and (p.ketQuaKetThuc is null or p.ketQuaKetThuc<>:rejected)
+                  and (p.donHang.trangThai<>:assigned or p.ketThucLuc is null)
                 """, Long.class)
                 .setParameter("order", order).setParameter("driver", driver)
-                .setParameter("rejected", AssignmentOutcome.TU_CHOI).getSingleResult() > 0;
+                .setParameter("rejected", AssignmentOutcome.TU_CHOI).setParameter("assigned", OrderStatus.DA_GAN).getSingleResult() > 0;
     }
 
     public boolean rejected(String order, String driver) {
@@ -97,8 +98,9 @@ public final class DispatchDAO {
     public Drivers drivers(DriverStatus status, Boolean busy, String order, LocalDate today,
                            int page, int size) {
         Map<String, Object> params = new HashMap<>();
-        String where = " where t.taiKhoan.trangThai=:active";
+        String where = " where t.taiKhoan.trangThai=:active and t.taiKhoan.vaiTro=:driverRole";
         params.put("active", AccountStatus.HOAT_DONG);
+        params.put("driverRole", AccountRole.TAI_XE);
         if (status != null) { where += " and t.trangThai=:status"; params.put("status", status); }
         if (busy != null) where += " and " + (busy ? BUSY : "not " + BUSY);
         if (order != null) {
@@ -136,8 +138,10 @@ public final class DispatchDAO {
         } else if (role == AccountRole.TAI_XE) {
             where += " and exists (select p.id from PhanCongDonHang p"
                     + " where p.donHang=d and p.taiXe.id=:profile"
-                    + " and (p.ketQuaKetThuc is null or p.ketQuaKetThuc<>:rejected))";
+                    + " and (p.ketQuaKetThuc is null or p.ketQuaKetThuc<>:rejected)"
+                    + " and (d.trangThai<>:assigned or p.ketThucLuc is null))";
             params.put("profile", profile);
+            params.put("assigned", OrderStatus.DA_GAN);
             params.put("rejected", AssignmentOutcome.TU_CHOI);
         }
         if (status != null) { where += " and d.trangThai=:status"; params.put("status", status); }

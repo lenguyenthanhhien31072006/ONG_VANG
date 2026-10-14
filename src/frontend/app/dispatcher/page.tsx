@@ -118,6 +118,8 @@ export default function DispatcherLiveBoardPage() {
         incidentCount={incidents.filter((i) => i.status === "CHO_XU_LY").length}
       />
 
+      <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-sm"><div className="max-w-[1600px] mx-auto flex flex-wrap justify-between gap-2"><span>Bản giao diện mẫu · dữ liệu mô phỏng trong trình duyệt</span><Link href="/dispatcher/live" className="font-bold text-amber-900 underline">Điều phối đơn SQL Server · TX4 →</Link></div></div>
+
       {/* OPERATIONS TELEMETRY STRIP */}
       <section className="bg-white border-b border-stone-200 px-4 sm:px-6 py-2.5 shadow-2xs">
         <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3 sm:gap-4">

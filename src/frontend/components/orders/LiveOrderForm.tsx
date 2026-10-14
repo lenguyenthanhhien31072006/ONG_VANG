@@ -18,7 +18,7 @@ const initial: Form = {
   benThanhToan: "NGUOI_DAT", phuongThucThanhToan: "TIEN_MAT",
 };
 
-export function LiveOrderForm({ dispatcher = false }: { dispatcher?: boolean }) {
+export function LiveOrderForm({ dispatcher = false, dispatcherPath = "/dispatcher" }: { dispatcher?: boolean; dispatcherPath?: string }) {
   const router = useRouter();
   const [form, setForm] = useState<Form>(initial);
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -95,7 +95,7 @@ export function LiveOrderForm({ dispatcher = false }: { dispatcher?: boolean }) 
           tenNguoiNhan: form.tenNguoiNhan.trim(), sdtNguoiNhan: form.sdtNguoiNhan,
           ghiChuGiaoHang: form.ghiChuGiaoHang.trim() }),
       });
-      router.push(dispatcher ? `/dispatcher/orders/${result.maDon}` : `/orders/${result.maDon}`);
+      router.push(dispatcher ? `${dispatcherPath}/orders/${result.maDon}` : `/orders/${result.maDon}`);
     } catch (cause) {
       const code = (cause as { code?: string }).code;
       if (code === "QUOTE_CHANGED" || code === "QUOTE_EXPIRED") { setQuote(null); key.current = null; }

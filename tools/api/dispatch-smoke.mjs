@@ -94,7 +94,23 @@ await dispatcher.call(path + '/assignments', { maTx: 'TX-DEMO-1' }, 403, 'Error'
 await customer.call(path + '/assignments', { maTx: 'TX-DEMO-1' }, 403, 'Error', 'FORBIDDEN');
 await dispatcher.call(path + '/assignments', '{', 400, 'Error', 'JSON_INVALID');
 await dispatcher.call(path + '/assignments', { maTx: 'TX-DEMO-1', force: true }, 400, 'Error', 'VALIDATION_ERROR');
+// TX4: missing Goong key must never accept invented coordinates or advertise road ranking.
+const demoLocation = '/api/drivers/TX-DEMO-1/demo-location';
+await anon.call(demoLocation, { diaChi: '1 Công xã Paris, Quận 1, TP.HCM' }, 401, 'Error', 'AUTH_REQUIRED');
+await customer.call(demoLocation, { diaChi: 'test' }, 403, 'Error', 'FORBIDDEN');
+await driver1.call(demoLocation, { diaChi: 'test' }, 403, 'Error', 'FORBIDDEN');
+await dispatcher.call(demoLocation, { diaChi: 'test' }, 403, 'Error', 'CSRF_INVALID', { 'X-CSRF-Token': '' });
+await dispatcher.call(demoLocation, { diaChi: 'test', viDoDemo: '10.77' }, 400, 'Error', 'VALIDATION_ERROR');
+await dispatcher.call(demoLocation, { diaChi: '   ' }, 400, 'Error', 'VALIDATION_ERROR');
+await dispatcher.call(demoLocation, { diaChi: 'test' }, 503, 'Error', 'GOONG_NOT_CONFIGURED');
+await dispatcher.headWithBody(demoLocation, { diaChi: 'test' });
 const suggestions = await dispatcher.call(path + '/driver-suggestions', undefined, 200, 'DriverPage');
+assert.equal(suggestions.cachSapXep, 'THOI_GIAN_RANH_DU_PHONG');
+assert.equal(suggestions.lyDoDuPhong, 'GOONG_NOT_CONFIGURED');
+assert(suggestions.items.every(d => d.nguonLoTrinh === null && d.quangDuongDenDiemLayKm === null));
+assert(suggestions.items.every(d => d.nguonViTri === null && d.viTriCapNhatLuc === null));
+checks += 4;
+
 assert.deepEqual(suggestions.items.map(d => d.maTx), ['TX-DEMO-3', 'TX-DEMO-2', 'TX-DEMO-1']);
 const free = await dispatcher.call('/api/drivers?trangThaiHoatDong=ONLINE&dangBanChuyen=false', undefined, 200, 'DriverPage');
 assert.equal(free.totalElements, 3);

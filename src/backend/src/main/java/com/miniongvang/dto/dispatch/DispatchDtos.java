@@ -21,9 +21,12 @@ public final class DispatchDtos {
 
     public record Vehicle(String maPhuongTien,String bienSoXe,String loaiXe,String mauXe) {}
 
-    public record Driver(String maTx,String hoTen,String soDienThoai,String trangThaiHoatDong,boolean dangBanChuyen,Vehicle phuongTien) {}
+    public record Driver(String maTx,String hoTen,String soDienThoai,String trangThaiHoatDong,boolean dangBanChuyen,Vehicle phuongTien,
+                         String diaChiViTriDemo,String viDoDemo,String kinhDoDemo,String nguonViTri,String viTriCapNhatLuc,
+                         String quangDuongDenDiemLayKm,Long thoiGianDenDiemLayGiay,String nguonLoTrinh) {}
 
-    public record DriverPage(List<Driver> items,int page,int size,long totalElements,long totalPages) {}
+    public record DriverPage(List<Driver> items,int page,int size,long totalElements,long totalPages,
+                             String cachSapXep,String lyDoDuPhong) {}
 
     public record Summary(long tongSoDon,String tongCuoc) {}
 

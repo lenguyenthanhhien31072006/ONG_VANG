@@ -98,6 +98,98 @@ class DesignV1IntegrationTest {
                         "0901234567", null, parcel)).maDon();
     }
 
+    /** Injected transport verifies SQL persistence/transactions, not real Goong availability. */
+    private static com.miniongvang.integration.DriverRoutingProvider tx4Routing() {
+        return new com.miniongvang.integration.DriverRoutingProvider() {
+            public Position geocode(String address) {
+                return new Position(address, new BigDecimal(address.contains("TX-DEMO-1") ? "10.7800000" : "10.7900000"), new BigDecimal("106.7000000"));
+            }
+            public com.miniongvang.integration.RouteProvider.RouteData estimate(Position start, Position end) {
+                long meters = start.address().contains("TX-DEMO-1") ? 900 : 100;
+                return new com.miniongvang.integration.RouteProvider.RouteData(start.address(),end.address(),meters,60,"GOONG");
+            }
+        };
+    }
+    private static DispatchService tx4Dispatch(com.miniongvang.integration.DriverRoutingProvider provider) {
+        return new DispatchService(db.entityManagerFactory(), Clock.systemUTC(),new com.miniongvang.service.DriverRankingService(provider));
+    }
+    @Test void tx4LocationPersistsForAllSessionsAndRoutingRanksBeforePaging() {
+        var service = tx4Dispatch(tx4Routing());
+        var location = service.configureLocation(dispatcher(),"TX-DEMO-1","  TX-DEMO-1 test location  ");
+        assertEquals("DEMO_CO_DINH",location.nguonViTri()); assertNotNull(location.viTriCapNhatLuc());
+        assertEquals("10.7800000",location.viDoDemo());
+        assertThrows(SecurityException.class,() -> service.configureLocation(customer(1),"TX-DEMO-1","test"));
+        assertThrows(SecurityException.class,() -> service.configureLocation(driver(),"TX-DEMO-1","test"));
+        for (String id : List.of("TX-DEMO-2","TX-DEMO-3")) service.configureLocation(dispatcher(),id,id+" test location");
+        var secondSession = tx4Dispatch(tx4Routing());
+        assertEquals(location,secondSession.drivers(dispatcher(),0,20,null,null).items().stream()
+                .filter(d->d.maTx().equals("TX-DEMO-1")).findFirst().orElseThrow());
+        String order = newOrder();
+        var first = secondSession.suggestions(dispatcher(),order,0,1);
+        assertEquals("GOONG_DEN_DIEM_LAY",first.cachSapXep()); assertNull(first.lyDoDuPhong());
+        assertEquals(3,first.totalElements()); assertEquals("TX-DEMO-2",first.items().getFirst().maTx());
+        assertEquals("0.100",first.items().getFirst().quangDuongDenDiemLayKm());
+        assertEquals("TX-DEMO-3",secondSession.suggestions(dispatcher(),order,1,1).items().getFirst().maTx());
+        assertEquals("TX-DEMO-1",secondSession.suggestions(dispatcher(),order,2,1).items().getFirst().maTx());
+    }
+    @Test void tx4FailedGeocodeNeverOverwritesExistingLocationAndSqlRejectsPartialPosition() throws Exception {
+        var service=tx4Dispatch(tx4Routing()); var before=service.configureLocation(dispatcher(),"TX-DEMO-1","TX-DEMO-1 original");
+        var failing=new com.miniongvang.integration.DriverRoutingProvider() {
+            public Position geocode(String address) { throw new com.miniongvang.integration.RouteFailure(com.miniongvang.integration.RouteFailure.Kind.ROUTE_PROVIDER_ERROR); }
+            public com.miniongvang.integration.RouteProvider.RouteData estimate(Position a,Position b) { throw new AssertionError(); }
+        };
+        assertThrows(com.miniongvang.integration.RouteFailure.class,()->tx4Dispatch(failing).configureLocation(dispatcher(),"TX-DEMO-1","changed"));
+        assertEquals(before,service.drivers(dispatcher(),0,20,null,null).items().stream().filter(d->d.maTx().equals("TX-DEMO-1")).findFirst().orElseThrow());
+        try (var c=db.dataSource().getConnection();var q=c.createStatement()) {
+            assertThrows(java.sql.SQLException.class,()->q.executeUpdate("UPDATE dbo.tai_xe SET vi_do_demo=10 WHERE ma_tx='TX-DEMO-2'"));
+            assertThrows(java.sql.SQLException.class,()->q.executeUpdate("UPDATE dbo.tai_xe SET vi_do_demo=91 WHERE ma_tx='TX-DEMO-1'"));
+            assertThrows(java.sql.SQLException.class,()->q.executeUpdate("UPDATE dbo.tai_xe SET nguon_vi_tri='GPS' WHERE ma_tx='TX-DEMO-1'"));
+        }
+        assertThrows(com.miniongvang.service.DriverRankingService.Unconfigured.class,()->dispatch.configureLocation(dispatcher(),"TX-DEMO-2","test"));
+    }
+    @Test void tx4RoutingDoesNotHoldDatabaseTransactionAndRechecksChangesBeforeReturning() {
+        var service=tx4Dispatch(tx4Routing());
+        for (String id:List.of("TX-DEMO-1","TX-DEMO-2","TX-DEMO-3")) service.configureLocation(dispatcher(),id,id+" test");
+        String order=newOrder();
+        var changing=new com.miniongvang.integration.DriverRoutingProvider() {
+            boolean changed;
+            public Position geocode(String address) { return tx4Routing().geocode(address); }
+            public com.miniongvang.integration.RouteProvider.RouteData estimate(Position a,Position b) {
+                if (!changed) {
+                    changed=true;
+                    tx.run(em->{em.createNativeQuery("UPDATE dbo.tai_xe SET trang_thai='OFFLINE', ranh_tu=NULL WHERE ma_tx='TX-DEMO-1'").executeUpdate();return null;});
+                }
+                return tx4Routing().estimate(a,b);
+            }
+        };
+        var result=tx4Dispatch(changing).suggestions(dispatcher(),order,0,20);
+        assertEquals("DRIVER_SNAPSHOT_CHANGED",result.lyDoDuPhong());
+        assertEquals("THOI_GIAN_RANH_DU_PHONG",result.cachSapXep());
+        assertTrue(result.items().stream().noneMatch(d->d.maTx().equals("TX-DEMO-1")));
+        assertTrue(result.items().stream().allMatch(d->d.nguonLoTrinh()==null));
+        assertThrows(DispatchErrors.Conflict.class,()->service.assign(dispatcher(),order,"TX-DEMO-1"));
+    }
+    @Test void tx4TwoOrdersRacingForSameDriverLeaveExactlyOneActiveAssignment() throws Exception {
+        String first=newOrder(),second=newOrder();
+        var ready=new java.util.concurrent.CountDownLatch(2);var go=new java.util.concurrent.CountDownLatch(1);
+        try (var pool=Executors.newFixedThreadPool(2)) {
+            var futures=List.of(first,second).stream().map(id->pool.submit(()->{ready.countDown();assertTrue(go.await(10,TimeUnit.SECONDS));return assignOrConflict(id,"TX-DEMO-1");})).toList();
+            assertTrue(ready.await(10,TimeUnit.SECONDS));go.countDown();
+            assertEquals(1,(futures.get(0).get(20,TimeUnit.SECONDS)?1:0)+(futures.get(1).get(20,TimeUnit.SECONDS)?1:0));
+        }
+        tx.run(em->{assertEquals(1L,em.createQuery("select count(p) from PhanCongDonHang p where p.taiXe.id='TX-DEMO-1' and p.ketThucLuc is null",Long.class).getSingleResult());return null;});
+    }
+    @Test void tx4OnlyCurrentlyAssignedDriverSeesAssignedOrderAfterRejectionAndReassignment() {
+        String order=newOrder(); dispatch.assign(dispatcher(),order,"TX-DEMO-1");
+        var driver2=new ActorContext("TK-DEMO-TX-2","Driver 2",AccountRole.TAI_XE,null,"TX-DEMO-2");
+        assertThrows(NoSuchElementException.class,()->dispatch.detail(driver2,order));
+        dispatch.reject(driver(),order,"Không thể nhận đơn"); dispatch.assign(dispatcher(),order,"TX-DEMO-2");
+        assertThrows(NoSuchElementException.class,()->dispatch.detail(driver(),order));
+        assertEquals(0,dispatch.orders(driver(),0,20,null,null,OrderStatus.DA_GAN).totalElements());
+        assertEquals("DA_GAN",dispatch.detail(driver2,order).trangThai());
+        assertEquals(1,dispatch.orders(driver2,0,20,null,null,OrderStatus.DA_GAN).totalElements());
+    }
+
     @Test void t20DispatcherCanFindCustomersForOrderWithoutLeakingLockedAccounts() {
         var customers = new CustomerService(db.entityManagerFactory());
         var firstPage = customers.search(dispatcher(), 0, 1, null);

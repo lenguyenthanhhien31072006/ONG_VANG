@@ -70,7 +70,7 @@ public final class ApiSecurityFilter implements Filter {
     }
 
     private static EnumSet<AccountRole> roles(String method, String path) {
-        if (path.equals("/api/customers") || path.equals("/api/drivers") || path.matches("/api/orders/[^/]+/driver-suggestions"))
+        if (path.equals("/api/customers") || path.equals("/api/drivers") || path.matches("/api/drivers/[^/]+/demo-location") || path.matches("/api/orders/[^/]+/driver-suggestions"))
             return EnumSet.of(AccountRole.TONG_DAI);
         if (path.startsWith("/api/reports/")) return EnumSet.of(AccountRole.CHU_DOI_XE);
         if (path.matches("/api/orders/[^/]+/(reject|transitions|incidents)")) return EnumSet.of(AccountRole.TAI_XE);

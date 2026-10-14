@@ -1,8 +1,8 @@
 # T04 — Hợp đồng API Mini Ong Vàng
 
-Phiên bản hợp đồng: **0.5.0** theo [designV1](../database/designV1.md). `User.maNguoiDung` là ID tài khoản; đơn hàng dùng `maTkTao`, sự kiện dùng `thuTu` và trạng thái trước/sau. Cơ sở: [kế hoạch dự án](../project_brief.md) và [ánh xạ schema](schema-mapping.md).
+Phiên bản hợp đồng: **0.7.0** theo [designV1](../database/designV1.md). `User.maNguoiDung` là ID tài khoản; đơn hàng dùng `maTkTao`, sự kiện dùng `thuTu` và trạng thái trước/sau. Cơ sở: [kế hoạch dự án](../project_brief.md) và [ánh xạ schema](schema-mapping.md).
 
-> [TX1 API contract đích](TX1-contract.md) mô tả thay đổi **chưa triển khai** cho TX3–TX7. `openapi.json`/Swagger/Postman ở đây tiếp tục phản ánh API 0.5.0 đang chạy; không dùng contract đích làm bằng chứng endpoint đã tồn tại.
+> [TX1 API contract đích](TX1-contract.md) mô tả thay đổi **chưa triển khai** cho TX3–TX7. `openapi.json`/Swagger/Postman ở đây tiếp tục phản ánh API 0.7.0 đang chạy; không dùng contract đích làm bằng chứng endpoint đã tồn tại.
 
 ## Trạng thái thực tế
 

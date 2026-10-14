@@ -819,7 +819,7 @@
                 }
               ]
             },
-            "description": "Danh sách tài xế\n\nChỉ tài khoản hoạt động; không trả CCCD. Lọc trạng thái ONLINE và dangBanChuyen=false để lấy tài xế rảnh. Sort hoTen,maTx; danh sách rỗng trả 200.\n\nStatus: implemented; UC: UC-12; roles: TONG_DAI"
+            "description": "Danh sách tài xế\n\nChỉ tài khoản hoạt động; không trả CCCD. Lọc trạng thái ONLINE và dangBanChuyen=false để lấy tài xế rảnh. Sort hoTen,maTx; danh sách rỗng trả 200. TX4: persisted fixed demo location, not GPS. Suggestions rank all eligible drivers by Goong road meters to pickup before paging; unavailable routing returns THOI_GIAN_RANH_DU_PHONG with lyDoDuPhong and null road metrics.\n\nStatus: implemented; UC: UC-12; roles: TONG_DAI"
           },
           "event": [
             {
@@ -836,6 +836,8 @@
                   "  pm.test('Response has size', () => pm.expect(body).to.have.property('size'));",
                   "  pm.test('Response has totalElements', () => pm.expect(body).to.have.property('totalElements'));",
                   "  pm.test('Response has totalPages', () => pm.expect(body).to.have.property('totalPages'));",
+                  "  pm.test('Response has cachSapXep', () => pm.expect(body).to.have.property('cachSapXep'));",
+                  "  pm.test('Response has lyDoDuPhong', () => pm.expect(body).to.have.property('lyDoDuPhong'));",
                   "  pm.test('Pagination is coherent', () => { pm.expect(body.items).to.be.an('array'); pm.expect(body.items.length).to.be.at.most(body.size); pm.expect(body.totalPages).to.eql(Math.ceil(body.totalElements / body.size)); });",
                   "}"
                 ]
@@ -880,7 +882,7 @@
                 }
               ]
             },
-            "description": "Gợi ý tài xế rảnh\n\nChỉ đơn CHO_GAN. ONLINE, không bận, tài khoản hoạt động; rảnh lâu nhất rồi maTx (ranhTu null đứng cuối). Loại các tài xế đã từ chối chính đơn này. Không có tài xế: items=[]; không phải lỗi.\n\nStatus: implemented; UC: UC-12; roles: TONG_DAI"
+            "description": "Gợi ý tài xế rảnh\n\nChỉ đơn CHO_GAN. ONLINE, không bận, tài khoản hoạt động; rảnh lâu nhất rồi maTx (ranhTu null đứng cuối). Loại các tài xế đã từ chối chính đơn này. Không có tài xế: items=[]; không phải lỗi. TX4: persisted fixed demo location, not GPS. Suggestions rank all eligible drivers by Goong road meters to pickup before paging; unavailable routing returns THOI_GIAN_RANH_DU_PHONG with lyDoDuPhong and null road metrics.\n\nStatus: implemented; UC: UC-12; roles: TONG_DAI"
           },
           "event": [
             {
@@ -897,6 +899,8 @@
                   "  pm.test('Response has size', () => pm.expect(body).to.have.property('size'));",
                   "  pm.test('Response has totalElements', () => pm.expect(body).to.have.property('totalElements'));",
                   "  pm.test('Response has totalPages', () => pm.expect(body).to.have.property('totalPages'));",
+                  "  pm.test('Response has cachSapXep', () => pm.expect(body).to.have.property('cachSapXep'));",
+                  "  pm.test('Response has lyDoDuPhong', () => pm.expect(body).to.have.property('lyDoDuPhong'));",
                   "  pm.test('Pagination is coherent', () => { pm.expect(body.items).to.be.an('array'); pm.expect(body.items.length).to.be.at.most(body.size); pm.expect(body.totalPages).to.eql(Math.ceil(body.totalElements / body.size)); });",
                   "}"
                 ]
@@ -2020,6 +2024,79 @@
                   "  pm.test('Response has vaiTro', () => pm.expect(body).to.have.property('vaiTro'));",
                   "  pm.test('Response has maKh', () => pm.expect(body).to.have.property('maKh'));",
                   "  pm.test('Response has maTx', () => pm.expect(body).to.have.property('maTx'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "configureDriverDemoLocation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/drivers/{{driverId}}/demo-location",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "drivers",
+                "{{driverId}}",
+                "demo-location"
+              ],
+              "query": []
+            },
+            "description": "Cấu hình vị trí mô phỏng cố định của tài xế\n\nChỉ tổng đài; body chỉ nhận diaChi. BE Goong geocode trước khi transaction lưu địa chỉ chuẩn hóa, tọa độ, DEMO_CO_DINH và thời điểm. Không GPS, không nhận tọa độ từ FE; lỗi không ghi thay đổi.\n\nStatus: implemented; UC: UC-12; roles: TONG_DAI",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"diaChi\": \"1 Công xã Paris, Bến Nghé, Quận 1, Thành phố Hồ Chí Minh\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('JSON content type', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const body = pm.response.json();",
+                  "  pm.test('Response has maTx', () => pm.expect(body).to.have.property('maTx'));",
+                  "  pm.test('Response has hoTen', () => pm.expect(body).to.have.property('hoTen'));",
+                  "  pm.test('Response has soDienThoai', () => pm.expect(body).to.have.property('soDienThoai'));",
+                  "  pm.test('Response has trangThaiHoatDong', () => pm.expect(body).to.have.property('trangThaiHoatDong'));",
+                  "  pm.test('Response has dangBanChuyen', () => pm.expect(body).to.have.property('dangBanChuyen'));",
+                  "  pm.test('Response has phuongTien', () => pm.expect(body).to.have.property('phuongTien'));",
+                  "  pm.test('Response has diaChiViTriDemo', () => pm.expect(body).to.have.property('diaChiViTriDemo'));",
+                  "  pm.test('Response has viDoDemo', () => pm.expect(body).to.have.property('viDoDemo'));",
+                  "  pm.test('Response has kinhDoDemo', () => pm.expect(body).to.have.property('kinhDoDemo'));",
+                  "  pm.test('Response has nguonViTri', () => pm.expect(body).to.have.property('nguonViTri'));",
+                  "  pm.test('Response has viTriCapNhatLuc', () => pm.expect(body).to.have.property('viTriCapNhatLuc'));",
+                  "  pm.test('Response has quangDuongDenDiemLayKm', () => pm.expect(body).to.have.property('quangDuongDenDiemLayKm'));",
+                  "  pm.test('Response has thoiGianDenDiemLayGiay', () => pm.expect(body).to.have.property('thoiGianDenDiemLayGiay'));",
+                  "  pm.test('Response has nguonLoTrinh', () => pm.expect(body).to.have.property('nguonLoTrinh'));",
                   "}"
                 ]
               }

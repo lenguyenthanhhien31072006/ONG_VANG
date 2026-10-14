@@ -12,7 +12,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /** Goong V2 geocoding and directions; API-specific JSON stays behind RouteProvider. */
-public final class GoongRouteProvider implements RouteProvider {
+public final class GoongRouteProvider implements RouteProvider, DriverRoutingProvider {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final java.util.logging.Logger LOG = java.util.logging.Logger.getLogger(GoongRouteProvider.class.getName());
     private final HttpClient client;
@@ -48,8 +48,14 @@ public final class GoongRouteProvider implements RouteProvider {
     }
 
     @Override public RouteData estimate(String origin, String destination) {
-        Location start = geocode(origin);
-        Location end = geocode(destination);
+        Position start = geocode(origin);
+        Position end = geocode(destination);
+        RouteData route = estimate(start, end);
+        if (route.distanceMeters() <= 0) throw new RouteFailure(RouteFailure.Kind.DISTANCE_INVALID);
+        return route;
+    }
+
+    @Override public RouteData estimate(Position start, Position end) {
         JsonNode response = get("direction?origin=" + encode(start.coordinates())
                 + "&destination=" + encode(end.coordinates()) + "&vehicle=" + vehicle + "&api_key=" + encode(apiKey));
         JsonNode routes = response.path("routes");
@@ -57,12 +63,12 @@ public final class GoongRouteProvider implements RouteProvider {
             throw new RouteFailure(RouteFailure.Kind.ADDRESS_NOT_FOUND);
         JsonNode leg = routes.get(0).path("legs");
         if (!leg.isArray() || leg.isEmpty()) throw new RouteFailure(RouteFailure.Kind.ROUTE_PROVIDER_ERROR);
-        long meters = positiveLong(leg.get(0).path("distance").path("value"));
+        long meters = nonnegativeLong(leg.get(0).path("distance").path("value"));
         long seconds = nonnegativeLong(leg.get(0).path("duration").path("value"));
-        return new RouteData(start.address, end.address, meters, seconds, "GOONG");
+        return new RouteData(start.address(), end.address(), meters, seconds, "GOONG");
     }
 
-    private Location geocode(String address) {
+    @Override public Position geocode(String address) {
         JsonNode response = get("geocode?address=" + encode(address) + "&api_key=" + encode(apiKey));
         JsonNode results = response.path("results");
         if (!results.isArray() || results.isEmpty())
@@ -77,7 +83,7 @@ public final class GoongRouteProvider implements RouteProvider {
         double lng = position.path("lng").asDouble();
         if (!Double.isFinite(lat) || !Double.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180)
             throw new RouteFailure(RouteFailure.Kind.ROUTE_PROVIDER_ERROR);
-        return new Location(formatted, lat + "," + lng);
+        return new Position(formatted, java.math.BigDecimal.valueOf(lat), java.math.BigDecimal.valueOf(lng));
     }
 
     private JsonNode get(String pathAndQuery) {
@@ -110,12 +116,6 @@ public final class GoongRouteProvider implements RouteProvider {
         }
     }
 
-    private static long positiveLong(JsonNode value) {
-        long number = nonnegativeLong(value);
-        if (number == 0) throw new RouteFailure(RouteFailure.Kind.DISTANCE_INVALID);
-        return number;
-    }
-
     private static long nonnegativeLong(JsonNode value) {
         if (!value.isNumber()) throw new RouteFailure(RouteFailure.Kind.ROUTE_PROVIDER_ERROR);
         double number = value.asDouble();
@@ -128,5 +128,4 @@ public final class GoongRouteProvider implements RouteProvider {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
-    private record Location(String address, String coordinates) {}
 }

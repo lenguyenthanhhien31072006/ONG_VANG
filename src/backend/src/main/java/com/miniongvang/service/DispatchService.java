@@ -24,10 +24,19 @@ public final class DispatchService {
     private final TransactionRunner transactions;
     private final Clock clock;
     private final DispatchQueryService queries;
+    private final DriverLocationService locations;
     public DispatchService(EntityManagerFactory factory) { this(factory,Clock.systemUTC()); }
     public DispatchService(EntityManagerFactory factory, Clock clock) {
+        this(factory,clock,new DriverRankingService(null));
+    }
+    public DispatchService(EntityManagerFactory factory, Clock clock, DriverRankingService routing) {
         transactions = new TransactionRunner(factory); this.clock=clock;
-        queries = new DispatchQueryService(factory, clock);
+        queries = new DispatchQueryService(factory, clock, routing);
+        locations = new DriverLocationService(factory,routing,clock);
+    }
+
+    public com.miniongvang.dto.dispatch.DispatchDtos.Driver configureLocation(ActorContext actor,String id,String address) {
+        return locations.configure(actor,id,address);
     }
 
     public OrderPage orders(ActorContext actor, int page, int size, LocalDate from, LocalDate to, OrderStatus status) {
@@ -60,7 +69,7 @@ public final class DispatchService {
             TaiKhoan account=em.find(TaiKhoan.class,driver.getTaiKhoan().getId(),LockModeType.PESSIMISTIC_WRITE);
             PhuongTien vehicle=dao.vehicle(driverId);
             if (driver.getTrangThai()!=DriverStatus.ONLINE || driver.getRanhTu()==null
-                    || account.getTrangThai()!=AccountStatus.HOAT_DONG
+                    || account.getTrangThai()!=AccountStatus.HOAT_DONG || account.getVaiTro()!=AccountRole.TAI_XE
                     || driver.getNgayHetHanGplx().isBefore(LocalDate.ofInstant(clock.instant(),VIETNAM))
                     || vehicle==null || !vehicle.isDangHoatDong()
                     || dao.busy(driverId) || dao.rejected(orderId,driverId)) throw new Conflict("DRIVER_UNAVAILABLE");

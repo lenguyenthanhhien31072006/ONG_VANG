@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Mini Ong Vàng API",
-    "version": "0.6.0",
-    "description": "DesignV1 API with TX3 route based ordering, versioned km/kg fares and DB order history. Goong requires a server side key; FAKE routes are finite demo fixtures."
+    "version": "0.7.0",
+    "description": "DesignV1 API with TX3 route based ordering, versioned km/kg fares and DB order history. Goong requires a server side key; FAKE routes are finite demo fixtures. TX4: fixed demo driver locations verified by server-side Goong; road ranking to pickup or labeled fallback. Not live GPS."
   },
   "x-tx1-target-design": {
     "status": "planned",
@@ -2539,7 +2539,7 @@
         ],
         "summary": "Danh sách tài xế",
         "operationId": "listDrivers",
-        "description": "Chỉ tài khoản hoạt động; không trả CCCD. Lọc trạng thái ONLINE và dangBanChuyen=false để lấy tài xế rảnh. Sort hoTen,maTx; danh sách rỗng trả 200.",
+        "description": "Chỉ tài khoản hoạt động; không trả CCCD. Lọc trạng thái ONLINE và dangBanChuyen=false để lấy tài xế rảnh. Sort hoTen,maTx; danh sách rỗng trả 200. TX4: persisted fixed demo location, not GPS. Suggestions rank all eligible drivers by Goong road meters to pickup before paging; unavailable routing returns THOI_GIAN_RANH_DU_PHONG with lyDoDuPhong and null road metrics.",
         "x-implementation-status": "implemented",
         "x-uc": [
           "UC-12"
@@ -2621,13 +2621,23 @@
                         "bienSoXe": "59A1-12345",
                         "loaiXe": "XE_MAY",
                         "mauXe": null
-                      }
+                      },
+                      "diaChiViTriDemo": null,
+                      "viDoDemo": null,
+                      "kinhDoDemo": null,
+                      "nguonViTri": null,
+                      "viTriCapNhatLuc": null,
+                      "quangDuongDenDiemLayKm": null,
+                      "thoiGianDenDiemLayGiay": null,
+                      "nguonLoTrinh": null
                     }
                   ],
                   "page": 0,
                   "size": 20,
                   "totalElements": 1,
-                  "totalPages": 1
+                  "totalPages": 1,
+                  "cachSapXep": "TEN_TAI_XE",
+                  "lyDoDuPhong": null
                 }
               }
             }
@@ -2745,7 +2755,7 @@
         ],
         "summary": "Gợi ý tài xế rảnh",
         "operationId": "suggestDrivers",
-        "description": "Chỉ đơn CHO_GAN. ONLINE, không bận, tài khoản hoạt động; rảnh lâu nhất rồi maTx (ranhTu null đứng cuối). Loại các tài xế đã từ chối chính đơn này. Không có tài xế: items=[]; không phải lỗi.",
+        "description": "Chỉ đơn CHO_GAN. ONLINE, không bận, tài khoản hoạt động; rảnh lâu nhất rồi maTx (ranhTu null đứng cuối). Loại các tài xế đã từ chối chính đơn này. Không có tài xế: items=[]; không phải lỗi. TX4: persisted fixed demo location, not GPS. Suggestions rank all eligible drivers by Goong road meters to pickup before paging; unavailable routing returns THOI_GIAN_RANH_DU_PHONG with lyDoDuPhong and null road metrics.",
         "x-implementation-status": "implemented",
         "x-uc": [
           "UC-12"
@@ -2813,13 +2823,23 @@
                         "bienSoXe": "59A1-12345",
                         "loaiXe": "XE_MAY",
                         "mauXe": null
-                      }
+                      },
+                      "diaChiViTriDemo": null,
+                      "viDoDemo": null,
+                      "kinhDoDemo": null,
+                      "nguonViTri": null,
+                      "viTriCapNhatLuc": null,
+                      "quangDuongDenDiemLayKm": null,
+                      "thoiGianDenDiemLayGiay": null,
+                      "nguonLoTrinh": null
                     }
                   ],
                   "page": 0,
                   "size": 20,
                   "totalElements": 1,
-                  "totalPages": 1
+                  "totalPages": 1,
+                  "cachSapXep": "THOI_GIAN_RANH_DU_PHONG",
+                  "lyDoDuPhong": "GOONG_NOT_CONFIGURED"
                 }
               }
             }
@@ -6424,6 +6444,318 @@
           ]
         }
       }
+    },
+    "/api/drivers/{maTx}/demo-location": {
+      "post": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Cấu hình vị trí mô phỏng cố định của tài xế",
+        "operationId": "configureDriverDemoLocation",
+        "description": "Chỉ tổng đài; body chỉ nhận diaChi. BE Goong geocode trước khi transaction lưu địa chỉ chuẩn hóa, tọa độ, DEMO_CO_DINH và thời điểm. Không GPS, không nhận tọa độ từ FE; lỗi không ghi thay đổi.",
+        "x-implementation-status": "implemented",
+        "x-uc": [
+          "UC-12"
+        ],
+        "x-roles": [
+          "TONG_DAI"
+        ],
+        "security": [
+          {
+            "sessionCookie": [],
+            "csrfToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "maTx",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Driver"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR, JSON_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "Không thể thực hiện yêu cầu: VALIDATION_ERROR",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  },
+                  "JSON_INVALID": {
+                    "value": {
+                      "code": "JSON_INVALID",
+                      "message": "JSON khong hop le.",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "AUTH_REQUIRED, SESSION_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "value": {
+                      "code": "AUTH_REQUIRED",
+                      "message": "Không thể thực hiện yêu cầu: AUTH_REQUIRED",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  },
+                  "SESSION_EXPIRED": {
+                    "value": {
+                      "code": "SESSION_EXPIRED",
+                      "message": "Không thể thực hiện yêu cầu: SESSION_EXPIRED",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, CSRF_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "value": {
+                      "code": "FORBIDDEN",
+                      "message": "Không thể thực hiện yêu cầu: FORBIDDEN",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  },
+                  "CSRF_INVALID": {
+                    "value": {
+                      "code": "CSRF_INVALID",
+                      "message": "Không thể thực hiện yêu cầu: CSRF_INVALID",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "RESOURCE_NOT_FOUND": {
+                    "value": {
+                      "code": "RESOURCE_NOT_FOUND",
+                      "message": "Không thể thực hiện yêu cầu: RESOURCE_NOT_FOUND",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "value": {
+                      "code": "INTERNAL_ERROR",
+                      "message": "Không thể thực hiện yêu cầu: INTERNAL_ERROR",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ADDRESS_NOT_FOUND, OUT_OF_SERVICE_AREA, DISTANCE_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "ADDRESS_NOT_FOUND": {
+                    "value": {
+                      "code": "ADDRESS_NOT_FOUND",
+                      "message": "ADDRESS_NOT_FOUND",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  },
+                  "OUT_OF_SERVICE_AREA": {
+                    "value": {
+                      "code": "OUT_OF_SERVICE_AREA",
+                      "message": "OUT_OF_SERVICE_AREA",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  },
+                  "DISTANCE_INVALID": {
+                    "value": {
+                      "code": "DISTANCE_INVALID",
+                      "message": "DISTANCE_INVALID",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "ROUTE_PROVIDER_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "ROUTE_PROVIDER_ERROR": {
+                    "value": {
+                      "code": "ROUTE_PROVIDER_ERROR",
+                      "message": "ROUTE_PROVIDER_ERROR",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "ROUTE_PROVIDER_TIMEOUT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "ROUTE_PROVIDER_TIMEOUT": {
+                    "value": {
+                      "code": "ROUTE_PROVIDER_TIMEOUT",
+                      "message": "ROUTE_PROVIDER_TIMEOUT",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "GOONG_NOT_CONFIGURED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "GOONG_NOT_CONFIGURED": {
+                    "value": {
+                      "code": "GOONG_NOT_CONFIGURED",
+                      "message": "GOONG_NOT_CONFIGURED",
+                      "fieldErrors": [],
+                      "traceId": "trace-demo-001"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverLocationRequest"
+              },
+              "example": {
+                "diaChi": "1 Công xã Paris, Bến Nghé, Quận 1, Thành phố Hồ Chí Minh"
+              }
+            }
+          }
+        },
+        "x-error-codes": {
+          "400": [
+            "VALIDATION_ERROR",
+            "JSON_INVALID"
+          ],
+          "401": [
+            "AUTH_REQUIRED",
+            "SESSION_EXPIRED"
+          ],
+          "403": [
+            "FORBIDDEN",
+            "CSRF_INVALID"
+          ],
+          "404": [
+            "RESOURCE_NOT_FOUND"
+          ],
+          "500": [
+            "INTERNAL_ERROR"
+          ],
+          "422": [
+            "ADDRESS_NOT_FOUND",
+            "OUT_OF_SERVICE_AREA",
+            "DISTANCE_INVALID"
+          ],
+          "502": [
+            "ROUTE_PROVIDER_ERROR"
+          ],
+          "504": [
+            "ROUTE_PROVIDER_TIMEOUT"
+          ],
+          "503": [
+            "GOONG_NOT_CONFIGURED"
+          ]
+        }
+      }
     }
   },
   "components": {
@@ -7520,7 +7852,15 @@
           "soDienThoai",
           "trangThaiHoatDong",
           "dangBanChuyen",
-          "phuongTien"
+          "phuongTien",
+          "diaChiViTriDemo",
+          "viDoDemo",
+          "kinhDoDemo",
+          "nguonViTri",
+          "viTriCapNhatLuc",
+          "quangDuongDenDiemLayKm",
+          "thoiGianDenDiemLayGiay",
+          "nguonLoTrinh"
         ],
         "properties": {
           "maTx": {
@@ -7553,6 +7893,68 @@
                 "type": "null"
               }
             ]
+          },
+          "diaChiViTriDemo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255
+          },
+          "viDoDemo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{7}$"
+          },
+          "kinhDoDemo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{7}$"
+          },
+          "nguonViTri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "DEMO_CO_DINH",
+              null
+            ]
+          },
+          "viTriCapNhatLuc": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "quangDuongDenDiemLayKm": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9]+\\.[0-9]{3}$"
+          },
+          "thoiGianDenDiemLayGiay": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "nguonLoTrinh": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "GOONG",
+              null
+            ]
           }
         },
         "examples": [
@@ -7567,7 +7969,15 @@
               "bienSoXe": "59A1-12345",
               "loaiXe": "XE_MAY",
               "mauXe": null
-            }
+            },
+            "diaChiViTriDemo": null,
+            "viDoDemo": null,
+            "kinhDoDemo": null,
+            "nguonViTri": null,
+            "viTriCapNhatLuc": null,
+            "quangDuongDenDiemLayKm": null,
+            "thoiGianDenDiemLayGiay": null,
+            "nguonLoTrinh": null
           }
         ]
       },
@@ -8069,7 +8479,9 @@
           "page",
           "size",
           "totalElements",
-          "totalPages"
+          "totalPages",
+          "cachSapXep",
+          "lyDoDuPhong"
         ],
         "properties": {
           "items": {
@@ -8094,6 +8506,21 @@
           "totalPages": {
             "type": "integer",
             "minimum": 0
+          },
+          "cachSapXep": {
+            "type": "string",
+            "enum": [
+              "TEN_TAI_XE",
+              "GOONG_DEN_DIEM_LAY",
+              "THOI_GIAN_RANH_DU_PHONG",
+              "KHONG_CO_TAI_XE"
+            ]
+          },
+          "lyDoDuPhong": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "examples": [
@@ -8110,13 +8537,23 @@
                   "bienSoXe": "59A1-12345",
                   "loaiXe": "XE_MAY",
                   "mauXe": null
-                }
+                },
+                "diaChiViTriDemo": null,
+                "viDoDemo": null,
+                "kinhDoDemo": null,
+                "nguonViTri": null,
+                "viTriCapNhatLuc": null,
+                "quangDuongDenDiemLayKm": null,
+                "thoiGianDenDiemLayGiay": null,
+                "nguonLoTrinh": null
               }
             ],
             "page": 0,
             "size": 20,
             "totalElements": 1,
-            "totalPages": 1
+            "totalPages": 1,
+            "cachSapXep": "THOI_GIAN_RANH_DU_PHONG",
+            "lyDoDuPhong": "GOONG_NOT_CONFIGURED"
           }
         ]
       },
@@ -8801,6 +9238,25 @@
             ]
           }
         }
+      },
+      "DriverLocationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "diaChi"
+        ],
+        "properties": {
+          "diaChi": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          }
+        },
+        "examples": [
+          {
+            "diaChi": "1 Công xã Paris, Bến Nghé, Quận 1, Thành phố Hồ Chí Minh"
+          }
+        ]
       }
     },
     "responses": {

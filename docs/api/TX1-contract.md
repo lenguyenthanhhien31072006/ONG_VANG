@@ -1,3 +1,5 @@
+> **Tiến độ TX4:** contract chạy thật v0.7.0 đã triển khai vị trí tài xế và gợi ý/gán TX4 cùng TX3; phần TX5–TX7 bên dưới vẫn là thiết kế đích. Xem [TX4](../TX4-implementation.md) và OpenAPI để biết các field/endpoint hiện chạy.
+
 # TX1 — Hợp đồng API đích cho các task TX
 
 **Trạng thái:** bản thiết kế ngày 14/10/2026, tất cả thay đổi dưới đây **chưa được triển khai**. [`openapi.json`](../../src/backend/src/main/webapp/openapi.json) vẫn là nguồn chính xác cho API đang chạy (v0.5.0); không thêm field/endpoint đích vào đó trước code vì Swagger/Postman và test sẽ mô tả sai runtime. Khi TX3–TX7 triển khai từng nhóm, cập nhật OpenAPI chạy thật, examples, Postman và test trong cùng PR; lúc đó chuyển từng operation sang `implemented`. Nghiệp vụ/ERD đích ở [designTX](../database/designTX.md).

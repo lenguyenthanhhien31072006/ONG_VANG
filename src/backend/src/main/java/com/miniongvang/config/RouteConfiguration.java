@@ -23,6 +23,14 @@ public final class RouteConfiguration {
         return from(settings);
     }
 
+    public static com.miniongvang.service.DriverRankingService driverRoutingFromEnvironment() {
+        String key = System.getenv("GOONG_API_KEY");
+        if (key == null || key.isBlank()) return new com.miniongvang.service.DriverRankingService(null);
+        long timeout = positiveLong(System.getenv().getOrDefault("GOONG_TIMEOUT_MS", "5000"), "GOONG_TIMEOUT_MS");
+        String vehicle = System.getenv().getOrDefault("GOONG_VEHICLE", "car").strip().toLowerCase(Locale.ROOT);
+        return new com.miniongvang.service.DriverRankingService(new GoongRouteProvider(key, Duration.ofMillis(timeout), vehicle));
+    }
+
     public static RouteService from(Map<String, String> env) {
         String name = env.getOrDefault("ROUTE_PROVIDER", "fake").strip().toLowerCase(Locale.ROOT);
         long maxKm = positiveLong(env.getOrDefault("ROUTE_MAX_DISTANCE_KM", "30"), "ROUTE_MAX_DISTANCE_KM");

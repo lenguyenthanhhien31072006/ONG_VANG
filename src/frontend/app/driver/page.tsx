@@ -86,6 +86,7 @@ export default function DriverDashboardPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAF9] text-[#1C1917] pb-20 md:pb-8">
       <DriverNavbar isOnline={isOnline} onToggleOnline={handleToggleOnline} />
+      <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 text-sm"><div className="max-w-[1024px] mx-auto flex flex-wrap justify-between gap-2"><span>Giao diện mẫu · dữ liệu mô phỏng trong trình duyệt</span><Link href="/driver/assigned" className="font-bold text-amber-900 underline">Đơn được gán từ SQL Server →</Link></div></div>
 
       <main className="flex-1 max-w-[1024px] w-full mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-5">
         {/* BANNER THÔNG BÁO TRẠNG THÁI */}

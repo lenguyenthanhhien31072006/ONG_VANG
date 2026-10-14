@@ -342,3 +342,7 @@ Controller → Service → DAO → Hibernate/JPA → SQL Server
 ```
 
 Controller nhận yêu cầu, Service xử lý quy tắc nghiệp vụ, DAO làm việc với dữ liệu qua Hibernate/JPA. Controller không gọi DAO trực tiếp. T03 đã triển khai lớp persistence; T06 đã triển khai auth; T07–T09 đã triển khai lộ trình, chính sách thành viên và báo giá. Endpoint `/api/health` vẫn là công cụ kiểm tra hạ tầng, T10 đã có API tạo đơn, T11 có API điều phối/gán/từ chối; T12 có tiến trình, sự cố và nhật ký; T13 hủy đơn, T14–T15 thanh toán, T16 lịch sử và T17 báo cáo/Excel đã triển khai. T20 bổ sung `listCustomers` cho tổng đài.
+
+## TX4 — điều phối theo vị trí mô phỏng
+
+Vị trí tài xế dùng chung trong SQL Server, xác minh Goong qua backend, gợi ý tuyến tới điểm lấy có nhãn nguồn/dự phòng và gán đơn thật. Xem [khởi động và kiểm tra giao diện](docs/TX4-implementation.md), [kiểm thử và trạng thái bằng chứng](tests/TX4-validation.md). Vị trí mô phỏng cố định không phải GPS. Thiếu Goong key vẫn có thứ tự dự phòng, chưa thể xác minh/lưu địa chỉ.
