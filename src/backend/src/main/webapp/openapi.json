@@ -6467,42 +6467,6 @@
         }
       }
     },
-    "/api/cod/drivers": {
-      "get": {
-        "tags": ["Reports"], "summary": "Tiền mặt COD từng tài xế và các đơn cấu thành",
-        "operationId": "getCodDrivers", "x-implementation-status": "implemented", "x-uc": ["UC-08"], "x-roles": ["TONG_DAI", "CHU_DOI_XE"],
-        "security": [{"sessionCookie": []}],
-        "responses": {"200": {"description": "Danh sách tài xế với số đang giữ và đủ điều kiện nộp", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CodDriverList"}}}}}
-      }
-    },
-    "/api/cod/drivers/{maTx}/settlements": {
-      "post": {
-        "tags": ["Payments"], "summary": "Chốt batch COD và mở VNPay Sandbox",
-        "operationId": "createCodSettlement", "x-implementation-status": "implemented", "x-uc": ["UC-08"], "x-roles": ["TONG_DAI"],
-        "security": [{"sessionCookie": [], "csrfToken": []}],
-        "parameters": [{"name": "maTx", "in": "path", "required": true, "schema": {"type": "string"}}, {"name": "Idempotency-Key", "in": "header", "required": true, "schema": {"type": "string"}}],
-        "requestBody": {"content": {"application/json": {"schema": {"type": "object", "additionalProperties": false}, "example": {}}}},
-        "responses": {"201": {"description": "Batch và URL thanh toán", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CodBatch"}}}}, "409": {"description": "COD_EMPTY hoặc đang chờ batch cũ"}}
-      }
-    },
-    "/api/cod/settlements/{maDot}": {
-      "get": {
-        "tags": ["Payments"], "summary": "Trạng thái batch COD sau Return",
-        "operationId": "getCodSettlement", "x-implementation-status": "implemented", "x-uc": ["UC-08"], "x-roles": ["TONG_DAI", "CHU_DOI_XE"],
-        "security": [{"sessionCookie": []}],
-        "parameters": [{"name": "maDot", "in": "path", "required": true, "schema": {"type": "string"}}],
-        "responses": {"200": {"description": "Batch COD", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CodBatch"}}}}}
-      }
-    },
-    "/api/cod/settlements/{maDot}/reconcile": {
-      "post": {
-        "tags": ["Payments"], "summary": "Truy vấn đối soát batch COD từ VNPay",
-        "operationId": "reconcileCodSettlement", "x-implementation-status": "implemented", "x-uc": ["UC-08"], "x-roles": ["TONG_DAI"],
-        "security": [{"sessionCookie": [], "csrfToken": []}],
-        "parameters": [{"name": "maDot", "in": "path", "required": true, "schema": {"type": "string"}}],
-        "responses": {"200": {"description": "Trạng thái sau đối soát", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CodBatch"}}}}}
-      }
-    },
     "/api/reports/drivers": {
       "get": {
         "tags": ["Reports"], "summary": "Thu nhập và COD theo tài xế",

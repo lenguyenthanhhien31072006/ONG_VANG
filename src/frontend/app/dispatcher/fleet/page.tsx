@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { DispatcherNavbar } from "@/components/layout/DispatcherNavbar";
 import { api, type Driver } from "@/lib/live-orders";
-import type { CodDriver } from "@/lib/finance";
 import { driverForView, type DispatchDriver } from "@/lib/dispatch-view";
 import type { DriverStatus } from "@/lib/types";
 import { useToast } from "@/components/ui/Toast";
@@ -22,9 +21,8 @@ export default function DispatcherFleetPage() {
   const [error, setError] = useState("");
   const refresh = useCallback(async () => {
     try {
-      const [page, cod] = await Promise.all([api<{ items: Driver[] }>("/drivers?size=100"), api<CodDriver[]>("/cod/drivers")]);
-      const holdings = new Map(cod.map((item) => [item.maTx, Number(item.soTienDangGiu)]));
-      setDrivers(page.items.map((item) => ({ ...driverForView(item), codCashHolding: holdings.get(item.maTx) ?? 0 })));
+      const page = await api<{ items: Driver[] }>("/drivers?size=100");
+      setDrivers(page.items.map(driverForView));
       setError("");
     }
     catch (cause) { setError((cause as Error).message); }
@@ -70,7 +68,7 @@ export default function DispatcherFleetPage() {
               Giám Sát Đội Xe & Tài Xế Tác Chiến
             </h1>
             <p className="text-xs sm:text-sm text-stone-500 mt-1">
-              Theo dõi trạng thái trực tuyến, khu vực tác chiến và hạn mức tiền mặt COD tạm giữ của đội ngũ tài xế
+              Theo dõi trạng thái trực tuyến, phương tiện và vị trí demo của đội ngũ tài xế
             </p>
           </div>
 
@@ -170,7 +168,6 @@ export default function DispatcherFleetPage() {
                   <th className="p-4 whitespace-nowrap">Trạng thái</th>
                   <th className="p-4 whitespace-nowrap">Cuốc hoàn tất</th>
                   <th className="p-4 whitespace-nowrap">Đánh giá</th>
-                  <th className="p-4 whitespace-nowrap">COD tạm giữ</th>
                   <th className="p-4 pr-6 text-right whitespace-nowrap">Thao tác</th>
                 </tr>
               </thead>
@@ -178,7 +175,6 @@ export default function DispatcherFleetPage() {
                 {filteredDrivers.map((d) => {
                   const isIdle = d.status === "ONLINE_IDLE";
                   const isBusy = d.status === "ONLINE_BUSY";
-                  const hasHighCod = d.codCashHolding > 500000;
 
                   return (
                     <tr key={d.id} className="hover:bg-stone-50/70 transition-colors">
@@ -212,20 +208,6 @@ export default function DispatcherFleetPage() {
                       <td className="p-4">
                         <span className="font-bold text-amber-700">—</span>
                         <div className="text-xs text-stone-500 font-medium">Chưa có thống kê</div>
-                      </td>
-                      <td className="p-4">
-                        <span
-                          className={`font-bold ${
-                            hasHighCod ? "text-rose-700" : "text-stone-800"
-                          }`}
-                        >
-                          —
-                        </span>
-                        {hasHighCod && (
-                          <span className="block text-[11px] text-rose-600 font-medium">
-                            Cần nộp về quỹ
-                          </span>
-                        )}
                       </td>
                       <td className="p-4 pr-6 text-right space-x-2">
                         <a

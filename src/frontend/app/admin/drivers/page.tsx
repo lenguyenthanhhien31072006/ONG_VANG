@@ -1,18 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAdmin } from "@/components/admin/AdminProvider";
 import { AdminDialog, AdminEmpty, AdminHeading, AdminStat, adminActivity } from "@/components/admin/AdminUI";
 import type { AdminDriver } from "@/lib/admin-extras";
-import { formatVND } from "@/lib/utils";
-import { api } from "@/lib/live-orders";
-import type { CodDriver } from "@/lib/finance";
 
 const blankDriver = (): AdminDriver => ({
   id: "", name: "", phone: "", vehiclePlate: "Chưa gán", vehicleType: "Chưa gán",
   currentDistrict: "Quận 1", status: "OFFLINE", idleSinceMinutes: 0, rating: 5,
-  completedOrdersToday: 0, codCashHolding: 0, acceptanceRate: 100, locked: false,
+  completedOrdersToday: 0, acceptanceRate: 100, locked: false,
 });
 
 export default function AdminDriversPage() {
@@ -23,13 +20,6 @@ export default function AdminDriversPage() {
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
-  const [cod, setCod] = useState<Map<string, number>>(new Map());
-  useEffect(() => {
-    const timer = setTimeout(() => { void api<CodDriver[]>("/cod/drivers")
-      .then((rows) => setCod(new Map(rows.map((row) => [row.maTx, Number(row.soTienDangGiu)]))))
-      .catch(() => setCod(new Map())); }, 0);
-    return () => clearTimeout(timer);
-  }, []);
   const occupiedIds = new Set(orders.filter((order) => ["DA_GAN", "DA_LAY_HANG", "DANG_GIAO"].includes(order.status)).map((order) => order.driver?.id));
   const status = (driver: AdminDriver) => driver.locked ? "Đã khóa" : occupiedIds.has(driver.id) ? "Đang giao" : driver.vehiclePlate === "Chưa gán" ? "Chưa có xe" : driver.status === "ONLINE_IDLE" ? "Sẵn sàng" : driver.status === "ONLINE_BUSY" ? "Đang giao" : "Ngoại tuyến";
   const visible = drivers.filter((driver) => {
@@ -65,7 +55,7 @@ export default function AdminDriversPage() {
     {notice && <p className="admin-feedback" role="status">{notice}</p>}
     <div className="admin-stat-grid"><AdminStat label="Tổng tài xế" value={drivers.length} note="Trong đội xe" /><AdminStat label="Sẵn sàng" value={drivers.filter((driver) => status(driver) === "Sẵn sàng").length} note="Có thể nhận đơn" tone="accent" /><AdminStat label="Đang giao" value={drivers.filter((driver) => status(driver) === "Đang giao").length} note="Đã nhận công việc" /><AdminStat label="Đã khóa" value={drivers.filter((driver) => driver.locked).length} note="Không thể nhận đơn" tone="alert" /></div>
     <section className="admin-panel admin-filter-panel"><div className="admin-filter-grid admin-filter-compact"><div className="admin-field"><label htmlFor="driver-search">Tìm tài xế</label><input id="driver-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tên, SĐT hoặc biển số" /></div><div className="admin-field"><label htmlFor="driver-status">Trạng thái</label><select id="driver-status" value={filter} onChange={(event) => setFilter(event.target.value)}><option value="ALL">Tất cả</option><option value="READY">Sẵn sàng</option><option value="BUSY">Đang giao</option><option value="LOCKED">Đã khóa</option></select></div></div></section>
-    <section className="admin-panel"><div className="admin-result-bar"><strong>{visible.length} tài xế</strong><span>Chọn một hàng để xem hồ sơ</span></div>{visible.length ? <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Tài xế</th><th>Phương tiện</th><th>Khu vực</th><th>Trạng thái</th><th>Cuốc hôm nay</th><th className="money">COD đang giữ</th><th className="action">Thao tác</th></tr></thead><tbody>{visible.map((driver) => <tr key={driver.id}><td><strong>{driver.name}</strong><small>{driver.phone}</small></td><td>{driver.vehiclePlate}</td><td>{driver.currentDistrict}</td><td><span className={`admin-status ${driver.locked ? "danger" : status(driver) === "Sẵn sàng" ? "success" : status(driver) === "Đang giao" ? "info" : "muted"}`}>{status(driver)}</span></td><td>{driver.completedOrdersToday}</td><td className="money">{cod.has(driver.id) ? formatVND(cod.get(driver.id) ?? 0) : "—"}</td><td className="action"><button className="admin-text-button" onClick={() => setSelected(driver.id)}>Chi tiết</button></td></tr>)}</tbody></table></div> : <AdminEmpty title="Không tìm thấy tài xế" detail="Thử từ khóa hoặc trạng thái khác." />}</section>
+    <section className="admin-panel"><div className="admin-result-bar"><strong>{visible.length} tài xế</strong><span>Chọn một hàng để xem hồ sơ</span></div>{visible.length ? <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Tài xế</th><th>Phương tiện</th><th>Khu vực</th><th>Trạng thái</th><th>Cuốc hôm nay</th><th className="action">Thao tác</th></tr></thead><tbody>{visible.map((driver) => <tr key={driver.id}><td><strong>{driver.name}</strong><small>{driver.phone}</small></td><td>{driver.vehiclePlate}</td><td>{driver.currentDistrict}</td><td><span className={`admin-status ${driver.locked ? "danger" : status(driver) === "Sẵn sàng" ? "success" : status(driver) === "Đang giao" ? "info" : "muted"}`}>{status(driver)}</span></td><td>{driver.completedOrdersToday}</td><td className="action"><button className="admin-text-button" onClick={() => setSelected(driver.id)}>Chi tiết</button></td></tr>)}</tbody></table></div> : <AdminEmpty title="Không tìm thấy tài xế" detail="Thử từ khóa hoặc trạng thái khác." />}</section>
     {current && <section className="admin-panel admin-extra-detail"><div className="admin-section-head"><div><h2>{current.name}</h2><p>{current.id} · {current.phone}</p></div><button className="admin-text-button" onClick={() => setSelected(null)}>Đóng</button></div><div className="admin-detail-body"><div className="admin-summary-grid"><div><small>Đánh giá</small><strong>{current.rating.toFixed(2)} / 5</strong></div><div><small>Tỷ lệ nhận đơn</small><strong>{current.acceptanceRate}%</strong></div><div><small>Xe được gán</small><strong>{vehicles.find((vehicle) => vehicle.driverId === current.id)?.plate ?? "Chưa có"}</strong></div></div><div className="admin-inline-actions"><button className="admin-button" onClick={() => { setError(""); setForm({ ...current }); }}>Sửa hồ sơ</button><button className="admin-button danger" onClick={() => toggleLock(current)}>{current.locked ? "Mở khóa" : "Khóa tài khoản"}</button></div><h3 className="admin-subheading">Đơn đang phụ trách</h3>{orders.filter((order) => order.driver?.id === current.id && !["DA_HUY", "HOAN_TAT", "CHUA_THANH_TOAN"].includes(order.status)).map((order) => <Link className="admin-list-link" key={order.id} href={`/admin/orders/${order.id}`}>{order.id} · {order.sender.district} → {order.receiver.district}<span>Chi tiết →</span></Link>)}{!orders.some((order) => order.driver?.id === current.id && !["DA_HUY", "HOAN_TAT", "CHUA_THANH_TOAN"].includes(order.status)) && <p className="admin-muted">Chưa có đơn đang phụ trách.</p>}</div></section>}
     {form && <AdminDialog title={form.id ? "Sửa hồ sơ tài xế" : "Thêm tài xế"} description="Thông tin lưu trong dữ liệu demo của cổng quản trị." onClose={() => setForm(null)} onSubmit={save} submitLabel="Lưu tài xế" error={error}><div className="admin-form-grid"><div className="admin-field"><label htmlFor="driver-name">Họ tên</label><input id="driver-name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div><div className="admin-field"><label htmlFor="driver-phone">Số điện thoại</label><input id="driver-phone" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></div><div className="admin-field"><label htmlFor="driver-district">Khu vực</label><select id="driver-district" value={form.currentDistrict} onChange={(event) => setForm({ ...form, currentDistrict: event.target.value })}>{["Quận 1", "Quận 3", "Quận 5", "Quận 7", "Quận 10", "Bình Thạnh"].map((district) => <option key={district}>{district}</option>)}</select></div><div className="admin-field"><label htmlFor="driver-online">Trạng thái trực</label><select id="driver-online" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as AdminDriver["status"] })}><option value="ONLINE_IDLE">Sẵn sàng</option><option value="OFFLINE">Ngoại tuyến</option></select></div></div></AdminDialog>}
   </>;

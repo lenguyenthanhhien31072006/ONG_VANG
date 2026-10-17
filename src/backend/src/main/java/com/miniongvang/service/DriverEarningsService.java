@@ -12,15 +12,14 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Earned and eligible amounts are facts; no bank payout is recorded here. */
+/** Revenue-share earnings only; no bank payout is recorded here. */
 public final class DriverEarningsService {
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private final TransactionRunner tx;
     public DriverEarningsService(EntityManagerFactory factory) { tx = new TransactionRunner(factory); }
 
     public record Earnings(String maTx, String hoTen, String tongCuocDaHoanTat,
-                           String phanTaiXePhatSinh, String phanTaiXeDuDieuKienChiTra,
-                           String thuNhapDangChoCod, String tienMatDangGiu, String tienCodDaNop) {}
+                           String phanTaiXePhatSinh) {}
 
     public List<Earnings> drivers(ActorContext actor, LocalDate from, LocalDate to) {
         validate(from,to);
@@ -48,8 +47,7 @@ public final class DriverEarningsService {
         Timestamp end=Timestamp.from(to.atStartOfDay(ZONE).toInstant());
         String id=d.getId();
         var totals=new DriverEarningsDAO(em).totals(id,begin,end);
-        return new Earnings(id,d.getTaiKhoan().getHoTen(),money(totals.completed()),money(totals.earned()),
-                money(totals.eligible()),money(totals.pendingCod()),money(totals.cashHolding()),money(totals.codPaid()));
+        return new Earnings(id,d.getTaiKhoan().getHoTen(),money(totals.completed()),money(totals.earned()));
     }
     private static String money(java.math.BigDecimal amount) { return amount.setScale(2).toPlainString(); }
 }

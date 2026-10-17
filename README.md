@@ -1,5 +1,8 @@
 # Mini Ong Vang
 
+> Nhánh database: đã bỏ chức năng nộp COD bằng migration V13; giữ thanh toán cước và chia 20/80. Xem [chi tiết](docs/database/remove-cod-settlement.md).
+
+
 ## Tài liệu và kiểm thử API (T04)
 
 Hiện `/api/health` và nghiệp vụ T06–T17 đã triển khai trên designV1, gồm tiền mặt/VNPay, lịch sử đơn và báo cáo/Excel. T20 bổ sung tìm khách cho tổng đài; xem trạng thái từng operation trong OpenAPI và [báo cáo nghiệm thu T20](tests/T20-acceptance.md).

@@ -192,7 +192,6 @@ export const SAMPLE_DRIVERS: DriverItem[] = [
     idleSinceMinutes: 18,
     rating: 4.95,
     completedOrdersToday: 8,
-    codCashHolding: 385000,
     acceptanceRate: 98.2,
   },
   {
@@ -206,7 +205,6 @@ export const SAMPLE_DRIVERS: DriverItem[] = [
     idleSinceMinutes: 25,
     rating: 4.88,
     completedOrdersToday: 6,
-    codCashHolding: 520000,
     acceptanceRate: 95.0,
   },
   {
@@ -220,7 +218,6 @@ export const SAMPLE_DRIVERS: DriverItem[] = [
     idleSinceMinutes: 0,
     rating: 4.92,
     completedOrdersToday: 9,
-    codCashHolding: 890000,
     acceptanceRate: 99.0,
   },
   {
@@ -234,7 +231,6 @@ export const SAMPLE_DRIVERS: DriverItem[] = [
     idleSinceMinutes: 8,
     rating: 4.79,
     completedOrdersToday: 5,
-    codCashHolding: 210000,
     acceptanceRate: 92.5,
   },
   {
@@ -248,7 +244,6 @@ export const SAMPLE_DRIVERS: DriverItem[] = [
     idleSinceMinutes: 120,
     rating: 4.85,
     completedOrdersToday: 4,
-    codCashHolding: 0,
     acceptanceRate: 94.0,
   },
 ];

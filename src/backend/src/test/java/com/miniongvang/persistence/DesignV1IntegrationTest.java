@@ -424,8 +424,7 @@ class DesignV1IntegrationTest {
             statement.execute("DISABLE TRIGGER dbo.trg_membership_policy_immutable ON dbo.chinh_sach_thanh_vien");
             statement.execute("DISABLE TRIGGER dbo.trg_fare_policy_immutable ON dbo.cau_hinh_cuoc");
             statement.execute("DISABLE TRIGGER dbo.trg_surcharge_policy_immutable ON dbo.cau_hinh_phu_thu");
-            for (String table : List.of("su_kien_nop_cod", "lan_nop_cod", "khoan_cod_trong_dot",
-                    "dot_nop_cod", "phan_chia_cuoc", "yeu_cau_tao_don", "bao_gia", "su_kien_thanh_toan",
+            for (String table : List.of("phan_chia_cuoc", "yeu_cau_tao_don", "bao_gia", "su_kien_thanh_toan",
                     "xac_nhan_thanh_toan_don_hang", "thanh_toan", "nhat_ky_don_hang",
                     "chi_tiet_kien_hang", "phu_thu_don_hang", "cuoc_don_hang",
                     "phan_cong_don_hang", "don_hang", "phuong_tien", "tai_xe",
@@ -1383,6 +1382,32 @@ class DesignV1IntegrationTest {
         tx.run(em -> { var p=em.find(com.miniongvang.entity.LanThanhToan.class,id);var time=Instant.parse(received);
             p.setTaoLuc(time.minusSeconds(1));p.setGiaiQuyetLuc(time);p.setThuLuc(time);return null; });
     }
+    @Test void removedCodTablesDoNotBreakCashCompletionRevenueAndDriverEarnings() {
+        tx.run(em -> {
+            for (String table : List.of("su_kien_nop_cod", "lan_nop_cod", "khoan_cod_trong_dot", "dot_nop_cod")) {
+                assertNull(em.createNativeQuery("select object_id(:name, 'U')")
+                        .setParameter("name", "dbo." + table).getSingleResult());
+            }
+            assertNotNull(em.createNativeQuery("select object_id('dbo.phan_chia_cuoc', 'U')").getSingleResult());
+            return null;
+        });
+        String id = completedOrder();
+        BigDecimal fare = new BigDecimal(dispatch.order(customer(1), id).cuoc().tongCuoc());
+        BigDecimal company = fare.multiply(new BigDecimal("0.20"))
+                .setScale(0, java.math.RoundingMode.HALF_UP).setScale(2);
+        var from = tx.run(em -> em.find(DonHang.class, id).getThoiGianHoanTat()
+                .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate());
+        var to = from.plusDays(1);
+        var result = reports().revenue(admin(), from, to, com.miniongvang.dto.report.ReportDtos.Group.THANG);
+        assertEquals(fare.toPlainString(), result.tong().tienThucThu());
+        assertEquals(company.toPlainString(), result.tong().phanCongTy());
+        assertEquals(fare.subtract(company).toPlainString(), result.tong().phanTaiXe());
+        var earnings = new com.miniongvang.service.DriverEarningsService(db.entityManagerFactory());
+        assertEquals(fare.subtract(company).toPlainString(), earnings.mine(driver(), from, to).phanTaiXePhatSinh());
+        assertEquals(fare.toPlainString(), earnings.mine(driver(), from, to).tongCuocDaHoanTat());
+        assertTrue(earnings.drivers(admin(), from, to).stream().anyMatch(d -> d.maTx().equals("TX-DEMO-1")));
+    }
+
     @Test void t17ReportsRequireActiveAuthorizedAccountAndValidDates() {
         var from=java.time.LocalDate.of(2026,10,1); var to=from.plusDays(1);
         assertThrows(SecurityException.class,()->reports().revenue(customer(1),from,to,com.miniongvang.dto.report.ReportDtos.Group.NGAY));

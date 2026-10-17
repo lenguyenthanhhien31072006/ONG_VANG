@@ -1,19 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAdmin } from "@/components/admin/AdminProvider";
 import { AdminDialog, AdminEmpty, AdminHeading, AdminStat, adminActivity } from "@/components/admin/AdminUI";
 import { formatVND } from "@/lib/utils";
-import { api } from "@/lib/live-orders";
-import type { CodDriver } from "@/lib/finance";
 
 export default function AdminPaymentsPage() {
   const { orders, updateDemo } = useAdmin();
-  const [cod, setCod] = useState<number | null>(null);
-  useEffect(() => { const timer = setTimeout(() => { void api<CodDriver[]>("/cod/drivers")
-    .then((rows) => setCod(rows.reduce((sum, row) => sum + Number(row.soTienDangGiu), 0)))
-    .catch(() => setCod(null)); }, 0); return () => clearTimeout(timer); }, []);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("ALL");
   const [method, setMethod] = useState("ALL");
@@ -37,9 +31,9 @@ export default function AdminPaymentsPage() {
   };
 
   return <>
-    <AdminHeading eyebrow="Tài chính đội xe" title="Thanh toán & đối soát" description="Theo dõi cước vận chuyển và tiền mặt tài xế chờ nộp trong dữ liệu demo." />
+    <AdminHeading eyebrow="Tài chính đội xe" title="Thanh toán & đối soát" description="Theo dõi cước vận chuyển và tình trạng thanh toán." />
     {notice && <p className="admin-feedback" role="status">{notice}</p>}
-    <div className="admin-stat-grid"><AdminStat label="Cước đã thu" value={formatVND(collected)} note="Đơn hoàn tất đã thanh toán" tone="accent" /><AdminStat label="Cước chưa thu" value={formatVND(due)} note="Đơn hoàn tất cần thu" tone="alert" /><AdminStat label="Tiền mặt tài xế giữ" value={cod === null ? "—" : formatVND(cod)} note="Theo DB, xem tab Báo cáo để đối soát" /><AdminStat label="Đơn hoàn tất chưa thu" value={completed.filter((order) => !order.paid).length} note="Chưa xác nhận thanh toán" /></div>
+    <div className="admin-stat-grid"><AdminStat label="Cước đã thu" value={formatVND(collected)} note="Đơn hoàn tất đã thanh toán" tone="accent" /><AdminStat label="Cước chưa thu" value={formatVND(due)} note="Đơn hoàn tất cần thu" tone="alert" /><AdminStat label="Đơn hoàn tất chưa thu" value={completed.filter((order) => !order.paid).length} note="Chưa xác nhận thanh toán" /></div>
     <section className="admin-panel admin-filter-panel"><div className="admin-filter-grid admin-filter-compact"><div className="admin-field"><label htmlFor="payment-search">Tìm mã đơn</label><input id="payment-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ví dụ: DH-2026-001230" /></div><div className="admin-field"><label htmlFor="payment-state">Tình trạng</label><select id="payment-state" value={filter} onChange={(event) => setFilter(event.target.value)}><option value="ALL">Tất cả</option><option value="PAID">Đã thu</option><option value="UNPAID">Chưa thu</option></select></div><div className="admin-field"><label htmlFor="payment-method">Phương thức</label><select id="payment-method" value={method} onChange={(event) => setMethod(event.target.value)}><option value="ALL">Tất cả</option><option value="TIEN_MAT">Tiền mặt</option><option value="VNPAY">VNPay</option></select></div></div></section>
     <section className="admin-panel"><div className="admin-result-bar"><strong>{visible.length} đơn hàng</strong><span>Tình trạng thanh toán demo</span></div>{visible.length ? <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Phương thức</th><th>Trạng thái đơn</th><th>Thanh toán</th><th className="money">Cước</th><th className="action">Thao tác</th></tr></thead><tbody>{visible.map((order) => <tr key={order.id}><td><strong>{order.id}</strong><small>{order.createdAt}</small></td><td>{order.sender.name}</td><td>{order.paymentMethod === "VNPAY" ? "VNPay" : order.paymentMethod === "TIEN_MAT" ? "Tiền mặt" : "Chưa chọn"}</td><td>{order.statusText}</td><td><span className={`admin-status ${order.paid ? "success" : "danger"}`}>{order.paid ? "Đã thu" : "Chưa thu"}</span></td><td className="money">{formatVND(order.totalFee)}</td><td className="action"><button className="admin-text-button" onClick={() => setSelected(order.id)}>Chi tiết</button>{!order.paid && ["HOAN_TAT", "CHUA_THANH_TOAN"].includes(order.status) && <button className="admin-text-button" onClick={() => setConfirmId(order.id)}>Ghi nhận thu</button>}</td></tr>)}</tbody></table></div> : <AdminEmpty title="Không có đơn phù hợp" detail="Thử thay đổi bộ lọc thanh toán." />}</section>
     {selectedOrder && <section className="admin-panel admin-extra-detail"><div className="admin-section-head"><div><h2>Thanh toán {selectedOrder.id}</h2><p>{selectedOrder.sender.name} · {selectedOrder.createdAt}</p></div><button className="admin-text-button" onClick={() => setSelected(null)}>Đóng</button></div><div className="admin-detail-body"><div className="admin-summary-grid"><div><small>Cước gốc</small><strong>{formatVND(selectedOrder.baseFee)}</strong></div><div><small>Phụ thu / giảm</small><strong>+{formatVND(selectedOrder.surchargeFee)} / −{formatVND(selectedOrder.vipDiscountFee)}</strong></div><div><small>Cước cần thanh toán</small><strong>{formatVND(selectedOrder.totalFee)}</strong></div></div><p className="admin-muted">Trạng thái: {selectedOrder.paid ? "Đã thu" : "Chưa thu"}. Phương thức: {selectedOrder.paymentMethod === "VNPAY" ? "VNPay" : selectedOrder.paymentMethod === "TIEN_MAT" ? "Tiền mặt" : "Chưa chọn"}.</p><Link className="admin-button" href={`/admin/orders/${selectedOrder.id}`}>Xem chi tiết đơn →</Link></div></section>}

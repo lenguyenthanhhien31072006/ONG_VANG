@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createHmac, randomInt, randomUUID } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 
 const base = (process.env.API_BASE_URL || 'http://127.0.0.1:18081').replace(/\/$/, '');
 const health = await (await fetch(base + '/api/health')).json();
@@ -76,28 +76,12 @@ await driver.call(path + '/payments', request, 409, 'PAYMENT_ALREADY_PAID',
 await driver.call(path + '/transitions', { trangThai: 'DANG_GIAO' });
 await driver.call(path + '/arrival', {});
 await driver.call(path + '/transitions', { trangThai: 'HOAN_TAT' });
-if (process.env.VNPAY_HASH_SECRET) {
-  const before = await dispatcher.call('/api/cod/drivers');
-  const holding = before.find(item => item.maTx === 'TX-DEMO-1');
-  assert(Number(holding.soTienDuDieuKienNop) >= Number(payment.soTien));
-  const batch = await dispatcher.call('/api/cod/drivers/TX-DEMO-1/settlements', {}, 201, undefined,
-    { 'Idempotency-Key': randomUUID() });
-  assert(batch.paymentUrl.startsWith('https://sandbox.vnpayment.vn/'));
-  assert(batch.items.some(item => item.maGiaoDich === payment.maGiaoDich));
-  const checkout = new URL(batch.paymentUrl);
-  const fields = Object.fromEntries(checkout.searchParams);
-  for (const key of [...Object.keys(fields)]) if (!['vnp_TmnCode', 'vnp_TxnRef', 'vnp_Amount', 'vnp_OrderInfo'].includes(key)) delete fields[key];
-  Object.assign(fields, { vnp_ResponseCode: '00', vnp_TransactionStatus: '00', vnp_TransactionNo: randomUUID().replaceAll('-', '') });
-  const canonical = new URLSearchParams(Object.entries(fields).sort(([a], [b]) => a.localeCompare(b))).toString();
-  fields.vnp_SecureHash = createHmac('sha512', process.env.VNPAY_HASH_SECRET).update(canonical).digest('hex');
-  const callback = new URLSearchParams(Object.entries(fields).sort(([a], [b]) => a.localeCompare(b))).toString();
-  const returned = await fetch(base + '/api/payments/vnpay/return?' + callback, { redirect: 'manual' });
-  assert.equal(returned.status, 302);
-  assert.equal((await dispatcher.call('/api/cod/settlements/' + batch.maDot)).trangThai, 'CHO_XU_LY');
-  const ipn = await (await fetch(base + '/api/payments/vnpay/ipn?' + callback)).json();
-  assert.equal(ipn.RspCode, '00');
-  assert.equal((await dispatcher.call('/api/cod/settlements/' + batch.maDot)).trangThai, 'THANH_CONG');
-  const after = await dispatcher.call('/api/cod/drivers');
-  assert(Number(after.find(item => item.maTx === 'TX-DEMO-1').soTienDangGiu) < Number(holding.soTienDangGiu));
-}
-console.log(`T14/TX7 main payment flow: ${checks} HTTP checks passed`);
+// Fare completion and earnings must remain available without remittance tables.
+const from = '2000-01-01', to = '2100-01-01';
+const earnings = await driver.call(`/api/drivers/me/earnings?tuNgay=${from}&denNgay=${to}`);
+assert(Number(earnings.phanTaiXePhatSinh) > 0);
+assert(!('thuNhapDangChoCod' in earnings));
+const removed = await fetch(base + '/api/cod/drivers', { headers: { Cookie: dispatcher.cookie } });
+assert.equal(removed.status, 404);
+checks++;
+console.log(`T14 payment flow: ${checks} HTTP checks passed`);

@@ -286,8 +286,8 @@ export default function DriverDashboardPage() {
             className="p-4 rounded-xl bg-white border border-stone-200 hover:border-amber-300 transition-colors shadow-2xs space-y-1"
           >
             <span className="text-xl">💳</span>
-            <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Ví tài xế & COD</h4>
-            <p className="text-[11px] text-stone-500">Đối soát tiền mặt và rút thu nhập</p>
+            <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Thu nhập tài xế</h4>
+            <p className="text-[11px] text-stone-500">Xem phần cước được hưởng và lịch sử thu cước</p>
           </Link>
         </section>
       </main>

@@ -1,20 +1,9 @@
 import { api } from "@/lib/live-orders";
 
-export type CodItem = { maDon: string; maGiaoDich: string; soTien: string; trangThaiDon: string };
-export type CodDriver = {
-  maTx: string; hoTen: string; bienSoXe: string; khuVuc: string | null;
-  soTienDangGiu: string; soTienDuDieuKienNop: string; soTienCanDoiSoat: string;
-  soDon: number; maDotDangCho: string | null; items: CodItem[];
-};
-export type CodBatch = {
-  maDot: string; maTx: string; soTien: string; trangThai: string;
-  paymentUrl: string | null; maThamChieu: string | null;
-  taoLuc: string; xacNhanLuc: string | null; items: CodItem[];
-};
 export type RevenueMetrics = {
   giaTriDonHoanTat: string; tienThucThu: string; tienThuChuaPhanBo: string;
   cuocConPhaiThuCuoiKy: string; soDonHoanTat: number; soDonHuy: number;
-  phanCongTy: string; phanTaiXe: string; tienMatTaiXeDangGiu: string; tienNopCod: string;
+  phanCongTy: string; phanTaiXe: string;
 };
 export type RevenueReport = {
   tuNgay: string; denNgay: string; muiGio: string;
@@ -22,8 +11,6 @@ export type RevenueReport = {
 };
 export type DriverEarnings = {
   maTx: string; hoTen: string; tongCuocDaHoanTat: string; phanTaiXePhatSinh: string;
-  phanTaiXeDuDieuKienChiTra: string; thuNhapDangChoCod: string;
-  tienMatDangGiu: string; tienCodDaNop: string;
 };
 
 export function reportRange(period: "TODAY" | "WEEK" | "MONTH") {

@@ -9,9 +9,9 @@ public final class ReportDtos {
 
     public record Metrics(String giaTriDonHoanTat,String tienThucThu,String tienThuChuaPhanBo,
                           String cuocConPhaiThuCuoiKy,long soDonHoanTat,long soDonHuy,
-                          String phanCongTy,String phanTaiXe,String tienMatTaiXeDangGiu,String tienNopCod) {
+                          String phanCongTy,String phanTaiXe) {
         public Metrics(String completed,String received,String unallocated,String due,long count,long cancelled) {
-            this(completed,received,unallocated,due,count,cancelled,"0.00","0.00","0.00","0.00");
+            this(completed,received,unallocated,due,count,cancelled,"0.00","0.00");
         }
     }
 

@@ -55,11 +55,7 @@ public final class VnpayGateway {
         return paymentUrlWithInfo(reference, orderInfo(orderId), amount, created, clientIp);
     }
 
-    public String codPaymentUrl(String reference, String batchId, BigDecimal amount, Instant created, String clientIp) {
-        return paymentUrlWithInfo(reference, codOrderInfo(batchId), amount, created, clientIp);
-    }
 
-    public static String codOrderInfo(String batchId) { return "Nop COD dot " + batchId.replace("-", ""); }
 
     private String paymentUrlWithInfo(String reference, String info, BigDecimal amount, Instant created, String clientIp) {
         if (!reference.matches("[A-Za-z0-9]{1,100}") || clientIp==null || !clientIp.matches("[0-9a-fA-F:.]{3,45}"))

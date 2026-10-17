@@ -1,5 +1,7 @@
 # Cơ sở dữ liệu designV1
 
+> Nhánh database: chức năng nộp COD đã bỏ bởi V13; xem [phạm vi thay đổi](remove-cod-settlement.md).
+
 Mô tả schema hiện hành ở [Chương 3](chuong3.md): Flyway V1–V12 tạo **26 bảng ứng dụng**; `demo_seed_manifest` và `flyway_schema_history` phục vụ vận hành, còn `sysdiagrams` có thể do SSMS tạo. [designV1.md](designV1.md) và [designV1-constraint-matrix.md](designV1-constraint-matrix.md) là tài liệu của baseline ban đầu, trước các phần mở rộng TX và auth. Không chạy các migration V1–V7 của mô hình cũ trên DB này.
 
 ## Khởi động local

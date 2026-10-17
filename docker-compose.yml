@@ -52,7 +52,6 @@ services:
       VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
       VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-}
       DRIVER_RETURN_URL: ${DRIVER_RETURN_URL:-http://localhost:3001/driver/orders}
-      DISPATCHER_RETURN_URL: ${DISPATCHER_RETURN_URL:-http://localhost:3001/dispatcher/reports}
       VNPAY_QUERY_IP: ${VNPAY_QUERY_IP:-}
       BREVO_API_KEY: ${BREVO_API_KEY:-}
       MAIL_FROM_EMAIL: ${MAIL_FROM_EMAIL:-}

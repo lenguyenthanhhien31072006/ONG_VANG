@@ -15,7 +15,7 @@ export function driverForView(driver: ApiDriver): DispatchDriver {
     vehicleType: driver.phuongTien?.loaiXe ?? "—",
     currentDistrict: driver.viTriDemoDiaChi ?? "Chưa cấu hình vị trí demo",
     status: driver.trangThaiHoatDong !== "ONLINE" ? "OFFLINE" : driver.dangBanChuyen ? "ONLINE_BUSY" : "ONLINE_IDLE",
-    idleSinceMinutes: 0, rating: 0, completedOrdersToday: 0, codCashHolding: 0, acceptanceRate: 0,
+    idleSinceMinutes: 0, rating: 0, completedOrdersToday: 0, acceptanceRate: 0,
     routeKm: driver.kmDenDiemLay, routeSeconds: driver.giayDenDiemLay,
     routeSource: driver.nguonDinhTuyen, locationSource: driver.viTriDemoNguon,
   };

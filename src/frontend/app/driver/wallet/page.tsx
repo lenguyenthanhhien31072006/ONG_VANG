@@ -26,8 +26,7 @@ export default function DriverWalletPage() {
   }, []);
   useEffect(() => { const timer = setTimeout(() => { void refresh(); }, 0); return () => clearTimeout(timer); }, [refresh]);
   const isOnline = driver?.trangThaiHoatDong === "ONLINE";
-  const balance = Number(earnings?.phanTaiXeDuDieuKienChiTra ?? 0);
-  const codHold = Number(earnings?.tienMatDangGiu ?? 0);
+  const balance = Number(earnings?.phanTaiXePhatSinh ?? 0);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAF9] text-[#1C1917] pb-24 md:pb-8">
@@ -38,19 +37,19 @@ export default function DriverWalletPage() {
         {/* Header */}
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-stone-900 tracking-tight">
-            Ví tài xế & đối soát tiền mặt
+            Thu nhập tài xế
           </h1>
           <p className="text-xs text-stone-500 mt-0.5">
-            Theo dõi thu nhập phát sinh, đủ điều kiện chi trả và tiền mặt đang giữ
+            Theo dõi phần cước tài xế được hưởng và lịch sử thu cước
           </p>
         </div>
 
-        {/* 2 THẺ TÀI CHÍNH CHÍNH */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Card 1: Số dư thu nhập khả dụng */}
+        {/* THU NHẬP PHÁT SINH */}
+        <div className="grid grid-cols-1 gap-4">
+          {/* Phần cước tài xế được hưởng, không phải tiền đã chi trả */}
           <div className="bg-stone-900 text-white rounded-2xl p-5 shadow-sm space-y-3 relative overflow-hidden">
             <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">
-              Thu nhập đủ điều kiện chi trả
+              Thu nhập phát sinh
             </span>
             <div className="text-3xl font-black">
               {formatVND(balance)}
@@ -58,21 +57,6 @@ export default function DriverWalletPage() {
             <p className="text-[11px] text-stone-400">
               Chưa ghi nhận chuyển khoản thực tế về ngân hàng tài xế.
             </p>
-            <p className="text-xs text-amber-300">Phát sinh: {formatVND(Number(earnings?.phanTaiXePhatSinh ?? 0))}</p>
-          </div>
-
-          {/* Card 2: Tiền COD tạm giữ cần nộp */}
-          <div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-2xs space-y-3">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">
-              Tiền mặt COD đang tạm giữ
-            </span>
-            <div className="text-3xl font-black text-rose-600">
-              {formatVND(codHold)}
-            </div>
-            <p className="text-[11px] text-stone-500">
-              Tiền cước đã thu hộ và chưa được đối soát nộp COD.
-            </p>
-            <p className="text-[11px] text-stone-500">Thu nhập đang chờ COD: {formatVND(Number(earnings?.thuNhapDangChoCod ?? 0))}. Điều phối viên thực hiện thanh toán COD qua Sandbox.</p>
           </div>
         </div>
 

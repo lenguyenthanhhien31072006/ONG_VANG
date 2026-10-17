@@ -25,7 +25,7 @@ public final class RevenueExcelExporter {
             row(sheet,1,new String[]{"Báo cáo doanh thu (VND)",report.muiGio()},false);
             row(sheet,2,new String[]{"Từ ngày",report.tuNgay(),"Đến ngày (không gồm)",report.denNgay(),"Nhóm",report.nhomTheo().name()},false);
             row(sheet,3,new String[]{"Thực thu gồm khoản chưa phân bổ; công nợ là số dư tại cuối mốc, không cộng các kỳ."},false);
-            row(sheet,4,new String[]{"Bắt đầu","Kết thúc","Giá trị đơn hoàn tất","Tiền thực thu","Thu chưa phân bổ","Công nợ cuối mốc","Số đơn hoàn tất","Số đơn hủy","Công ty 20%","Tài xế 80%","Tiền mặt đang giữ","COD đã nộp"},false);
+            row(sheet,4,new String[]{"Bắt đầu","Kết thúc","Giá trị đơn hoàn tất","Tiền thực thu","Thu chưa phân bổ","Công nợ cuối mốc","Số đơn hoàn tất","Số đơn hủy","Công ty 20%","Tài xế 80%"},false);
             int index=5;
             metrics(sheet,index++,"Tổng kỳ",report.denNgay(),report.tong());
             for(var bucket:report.items()) metrics(sheet,index++,bucket.batDau(),bucket.ketThuc(),bucket.chiTieu());
@@ -33,7 +33,7 @@ public final class RevenueExcelExporter {
         }
     }
     private static void metrics(StringBuilder xml,int index,String from,String to,Metrics m) {
-        row(xml,index,new String[]{from,to,m.giaTriDonHoanTat(),m.tienThucThu(),m.tienThuChuaPhanBo(),m.cuocConPhaiThuCuoiKy(),Long.toString(m.soDonHoanTat()),Long.toString(m.soDonHuy()),m.phanCongTy(),m.phanTaiXe(),m.tienMatTaiXeDangGiu(),m.tienNopCod()},true);
+        row(xml,index,new String[]{from,to,m.giaTriDonHoanTat(),m.tienThucThu(),m.tienThuChuaPhanBo(),m.cuocConPhaiThuCuoiKy(),Long.toString(m.soDonHoanTat()),Long.toString(m.soDonHuy()),m.phanCongTy(),m.phanTaiXe()},true);
     }
     private static void row(StringBuilder xml,int index,String[] values,boolean metrics) {
         xml.append("<row r=\"").append(index).append("\">");

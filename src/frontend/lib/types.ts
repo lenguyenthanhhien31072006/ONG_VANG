@@ -71,9 +71,7 @@ export interface DriverItem {
   idleSinceMinutes: number;
   rating: number;
   completedOrdersToday: number;
-  codCashHolding: number;
   walletBalance?: number;
-  codSettlementRequested?: boolean;
   acceptanceRate: number;
 }
 

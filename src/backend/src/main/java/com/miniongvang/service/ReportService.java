@@ -54,7 +54,7 @@ public final class ReportService {
     }
     private static Metrics metrics(ReportDAO.Totals t) {
         return new Metrics(money(t.completed()),money(t.received()),money(t.unallocated()),money(t.receivable()),t.completedCount(),t.cancelledCount(),
-                money(t.company()),money(t.driver()),money(t.cashHolding()),money(t.codPaid()));
+                money(t.company()),money(t.driver()));
     }
     private static String money(BigDecimal value) { return value.setScale(2).toPlainString(); }
 
